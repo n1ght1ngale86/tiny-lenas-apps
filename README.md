@@ -51,7 +51,7 @@ Alle Daten bleiben auf dem eigenen Gerät.
   oder um den Stand auf ein zweites Handy zu übertragen
 
 ## 📲 Installation
-1. Seite im Browser öffnen (GitHub Pages)
+1. Seite im Browser öffnen (GitHub Pages -> https://n1ght1ngale86.github.io/tiny-lenas-apps/)
 2. „App installieren" wählen (Chrome: Menü → *App installieren*)
 3. Die App startet wie eine native App vom Homescreen und funktioniert
    dank Service Worker auch offline
