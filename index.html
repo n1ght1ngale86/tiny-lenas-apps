@@ -441,7 +441,7 @@ function vDash(){
   let lastHtml='';
   if(last){
     const k=DB.koeder.find(x=>x.id===last.koederId);
-    lastHtml=`<div class="lastcatch">
+    lastHtml=`<div class="lastcatch" data-go="fangEdit" data-param="${last.id}" style="cursor:pointer">
       <div class="lbl">Letzter Fang</div>
       <div class="val"><b>${esc(last.fischart)}</b> · ${last.groesse} cm${k?` · ${esc(k.name)}`:''} · ${fmtDate(last.datum)}</div>
     </div>`;
