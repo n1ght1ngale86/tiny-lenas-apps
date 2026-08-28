@@ -711,7 +711,7 @@ function vFangForm(preselPlatz,editId){
       <select id="fwetter"><option value="">– nicht erfasst –</option>${WETTER.map(w=>`<option ${f&&f.wetter===w?'selected':''}>${w}</option>`).join('')}</select></div>
     <div class="field"><label>Fangfoto (optional)</label>
       <label class="fotobtn">📷 ${fotoData?'Anderes Foto wählen':'Foto hinzufügen'}
-        <input type="file" id="ffoto" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="ffoto" accept="image/*" style="display:none">
       </label>
       <div id="fpreview">${fotoData?`<img src="${fotoData}" alt="Fangfoto-Vorschau">`:''}</div>
       <button type="button" class="btn ghost" data-act="fotoRemove" id="fremove" style="margin-top:10px;${fotoData?'':'display:none'}">Foto entfernen</button></div>
