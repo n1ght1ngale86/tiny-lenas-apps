@@ -8,7 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Tiny Lena's Fishing App</title>
-<meta name="theme-color" content="#0B1014">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -219,10 +218,6 @@ function backupStempel(){
   DB.dirtyCount=0;
   save(false);
 }
-function backupDatei(){
-  backupStempel();
-  return backupInhalt();
-}
 /* Capacitor-Brücke: native Plugins, wenn die App in einer Capacitor-Hülle läuft */
 function capPlugins(){
   const c=window.Capacitor;
@@ -248,7 +243,7 @@ async function exportData(){
       render();
       alert(`✓ Backup gespeichert:\n${res.uri}`);
     }catch(e){
-      alert('Speichern fehlgeschlagen ('+(e&&e.message?e.message:e)+') – bitte "Backup teilen" oder "Backup kopieren" nutzen.');
+      alert('Speichern fehlgeschlagen ('+(e&&e.message?e.message:e)+') – bitte nochmals versuchen.');
     }
     return;
   }
@@ -265,51 +260,20 @@ async function exportData(){
   document.body.appendChild(a);a.click();a.remove();
   render();
 }
-async function shareData(){
-  const b=backupInhalt();
-  const plugins=capPlugins();
-  if(plugins&&plugins.Share){
-    try{
-      const res=await capSchreibeDatei(plugins,b.name,b.json,['CACHE','DATA']);
-      await plugins.Share.share({title:'Fishing-App Backup',files:[res.uri]});
-      backupStempel();
-    }catch(e){
-      const msg=String(e&&e.message?e.message:e);
-      if(!/cancel/i.test(msg))alert('Teilen fehlgeschlagen: '+msg);
-    }
-    render();
-    return;
-  }
-  try{
-    const datei=new File([b.json],b.name,{type:'application/json'});
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[datei]})){
-      await navigator.share({files:[datei],title:'Fishing-App Backup'});
-      backupStempel();
-    }else if(navigator.share){
-      await navigator.share({title:'Fishing-App Backup',text:b.json});
-      backupStempel();
-    }else{
-      alert('Teilen wird von dieser App-Hülle nicht unterstützt – bitte "Backup kopieren" nutzen.');
-    }
-  }catch(e){/* Abbruch durch Nutzerin ist ok */}
-  render();
-}
-function importJson(text){
-  try{
-    const d=JSON.parse(text);
-    if(!d||typeof d!=='object'||!Array.isArray(d.faenge)||!Array.isArray(d.plaetze))throw new Error('invalid');
-    if(!confirm(`Backup importieren (${d.faenge.length} Fänge, ${d.plaetze.length} Plätze)? Die aktuellen Daten auf diesem Gerät werden ersetzt.`))return false;
-    DB=Object.assign(defaults(),d);
-    save();home();
-    return true;
-  }catch(err){alert('Das ist kein gültiges Backup.');return false}
-}
 function importData(input){
   const file=input.files[0];
   input.value='';
   if(!file)return;
   const r=new FileReader();
-  r.onload=()=>importJson(r.result);
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!d||typeof d!=='object'||!Array.isArray(d.faenge)||!Array.isArray(d.plaetze))throw new Error('invalid');
+      if(!confirm(`Backup importieren (${d.faenge.length} Fänge, ${d.plaetze.length} Plätze)? Die aktuellen Daten auf diesem Gerät werden ersetzt.`))return;
+      DB=Object.assign(defaults(),d);
+      save();home();
+    }catch(err){alert('Das ist keine gültige Backup-Datei.')}
+  };
   r.readAsText(file);
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -332,25 +296,25 @@ let nav=[{v:'dash'}];
 let ignorePop=0;
 function go(view,param){
   nav.push({v:view,p:param});
-  try{history.pushState({app:nav.length},'')}catch(e){}
+  try{history.pushState({t:nav.length},'')}catch(e){}
   render();
 }
 function back(){
   if(nav.length>1){
     nav.pop();
-    render();
     ignorePop++;
     try{history.back()}catch(e){ignorePop--}
+    render();
   }
 }
 function home(){
-  const steps=nav.length-1;
+  const schritte=nav.length-1;
   nav=[{v:'dash'}];
-  render();
-  if(steps>0){
-    ignorePop++;
-    try{history.go(-steps)}catch(e){ignorePop--}
+  if(schritte>0){
+    ignorePop+=schritte;
+    try{history.go(-schritte)}catch(e){ignorePop-=schritte}
   }
+  render();
 }
 window.addEventListener('popstate',function(){
   if(ignorePop>0){ignorePop--;return}
@@ -380,9 +344,9 @@ function render(){
     eqForm:p=>{const i=p.indexOf('|');return i>-1?vEqForm(p.slice(0,i),null,p.slice(i+1)):vEqForm(p)},
     eqEdit:p=>{const i=p.indexOf(':');return vEqForm(p.slice(0,i),p.slice(i+1))},
     gearsetForm:p=>vGearsetForm(null,p), gearsetEdit:p=>vGearsetForm(p), setList:vSetList,
-    trips:vTrips, tripsArchiv:vTripsArchiv, tripForm:p=>vTripForm(), tripEdit:p=>vTripForm(p),
+    trips:vTrips, tripForm:p=>vTripForm(), tripEdit:p=>vTripForm(p),
     tipps:vTippsTools, knoten:vKnoten, knotenForm:p=>vKnotenForm(), knotenEdit:p=>vKnotenForm(p),
-    chunkExport:vChunkExport, chunkImport:vChunkImport
+    tripsArchiv:vTripsArchiv
   };
   app.innerHTML=views[cur.v](cur.p);
   window.scrollTo(0,0);
@@ -412,9 +376,6 @@ document.addEventListener('click',function(e){
       if(confirm('Übersichtsbild wirklich entfernen?')){DB.jigkopfBild=null;save();render();}
     }
     else if(act.dataset.act==='export')exportData();
-    else if(act.dataset.act==='share')shareData();
-    else if(act.dataset.act==='copyChunk')copyChunk(parseInt(act.dataset.i));
-    else if(act.dataset.act==='addChunk')addChunk();
     else if(act.dataset.act==='importClick'){const i=document.getElementById('importfile');if(i)i.click();}
     else if(act.dataset.act==='fotoRemove'){
       fotoData=null;
@@ -441,12 +402,6 @@ document.addEventListener('submit',function(e){
   else if(kind==='knoten')saveKnoten(e.target.dataset.edit);
 });
 document.addEventListener('change',function(e){
-  if(e.target.id==='chkfotos'){
-    chunkFotos=e.target.checked;
-    chunkExport=null;
-    render();
-    return;
-  }
   if(e.target.matches('.checks input')){
     e.target.parentNode.classList.toggle('on',e.target.checked);
     if(e.target.closest('#tziel')){updateTripKoederPills();updateTripWarn();return}
@@ -528,11 +483,6 @@ function vDash(){
     <button class="btn ghost" data-act="export" style="margin-top:0">⬇️ Backup exportieren</button>
     <button class="btn ghost" data-act="importClick" style="margin-top:0">⬆️ Backup importieren</button>
   </div>
-  <button class="btn ghost" data-act="share" style="margin-top:10px">📤 Backup teilen (z.B. an Filen / NAS)</button>
-  <div class="rowbtns" style="margin-top:10px">
-    <button class="btn ghost" data-go="chunkExport" style="margin-top:0">🧩 Backup kopieren</button>
-    <button class="btn ghost" data-go="chunkImport" style="margin-top:0">🧩 Import einfügen</button>
-  </div>
   <input type="file" id="importfile" accept="application/json,text/plain,application/octet-stream,.json,.txt,.bin" style="display:none">
   <div class="count" style="margin-top:10px;text-align:center;color:var(--muted);font-size:13px">${
     DB.dirtyCount
@@ -610,7 +560,7 @@ function vPlaetze(){
     </div>`;
   }).join('');
   return header('Plätze')+
-    `<button class="btn" style="margin:0 0 16px" data-go="platzForm">＋ Angelplatz</button>`+
+    `<button class="btn" data-go="platzForm" style="margin:0 0 16px">＋ Angelplatz</button>`+
     (items||`<div class="empty">Noch keine Plätze erfasst.<br>Leg mit deinem ersten Angelplatz los.</div>`);
 }
 
@@ -680,7 +630,7 @@ function vPlatzDetail(id){
     (p.foto?`<img class="thumb" src="${p.foto}" alt="Platzbild" data-foto="plaetze:${p.id}" style="margin:0 0 16px;border-radius:12px;border:1px solid var(--line)">`:'')+
     (p.notizen?`<div class="card" style="cursor:default;margin-bottom:16px"><div class="meta" style="font-style:italic;margin-top:0">📝 ${esc(p.notizen)}</div></div>`:'')+
     `<div class="section-title">Fänge an diesem Platz</div>`+
-    `<button class="btn" style="margin:0 0 16px" data-go="fangForm" data-param="${p.id}">＋ Fang</button>`+
+    `<button class="btn" data-go="fangForm" data-param="${p.id}" style="margin:0 0 16px">＋ Fang</button>`+
     (items?`<div class="list">${items}</div>`:`<div class="empty">Hier hat noch keiner gebissen 😉</div>`);
 }
 
@@ -699,8 +649,8 @@ function fangCard(f,showPlatz=true){
 function vFaenge(){
   const items=DB.faenge.slice().reverse().map(f=>fangCard(f)).join('');
   return header('Fänge')+
-    `<button class="btn" style="margin:0 0 10px" data-go="fangForm">＋ Fang</button>`+
-    (DB.trips.length?`<button class="btn ghost" style="margin:0 0 16px" data-go="fangForm" data-param="trip">🎒 ＋ Fang zu Trip</button>`:'')+
+    `<button class="btn" data-go="fangForm" style="margin:0 0 10px">＋ Fang</button>`+
+    (DB.trips.length?`<button class="btn ghost" data-go="fangForm" data-param="trip" style="margin:0 0 16px">🎒 ＋ Fang zu Trip</button>`:'')+
     (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine Fänge erfasst.<br>Zeit, das zu ändern!</div>`);
 }
 
@@ -869,7 +819,7 @@ function vKoeder(){
 function vKoederList(typ){
   const items=DB.koeder.filter(k=>(k.typ||'Softbait')===typ).map(koederCard).join('');
   return header(`${typ}s`,'Köder')+
-    `<button class="btn" style="margin:0 0 16px" data-go="koederForm" data-param="${typ}">＋ Köder</button>`+
+    `<button class="btn" data-go="koederForm" data-param="${typ}" style="margin:0 0 16px">＋ Köder</button>`+
     (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine ${typ}s erfasst.<br>Die Köderbox will gefüllt werden.</div>`);
 }
 function vKoederForm(editId,preTyp){
@@ -976,7 +926,7 @@ function vEquipment(){
   const sp=DB.gearsets.filter(g=>setTyp(g)==='Spinning').length;
   return header('Ausrüstung')+eq+
     `<div class="section-title">Tacklesets</div>`+
-    `<button class="btn" style="margin:0 0 12px" data-go="gearsetForm">＋ Tackleset</button>`+
+    `<button class="btn" data-go="gearsetForm" style="margin:0 0 12px">＋ Tackleset</button>`+
     `<div class="eqgrid">
       <div class="tile" data-go="setList" data-param="Baitcaster"><span class="ico">🎣</span>
        <div><div class="name">Baitcaster-Sets</div><div class="count">${bc} erfasst</div></div></div>
@@ -987,7 +937,7 @@ function vEquipment(){
 function vSetList(typ){
   const sets=DB.gearsets.filter(g=>setTyp(g)===typ).map(setCard).join('');
   return header(`${typ}-Sets`)+
-    `<button class="btn" style="margin:0 0 16px" data-go="gearsetForm" data-param="${typ}">＋ Tackleset</button>`+
+    `<button class="btn" data-go="gearsetForm" data-param="${typ}" style="margin:0 0 16px">＋ Tackleset</button>`+
     (sets?`<div class="list">${sets}</div>`:`<div class="empty">Noch keine ${typ}-Sets.<br>Stell dir dein erstes Set zusammen.</div>`);
 }
 function vTerminal(){
@@ -1018,7 +968,7 @@ function vEqList(cat,typ){
     ${x.zielfisch&&x.zielfisch.length?`<div class="tags">${x.zielfisch.map(fischTag).join('')}</div>`:''}
   </div>`).join('');
   return header(typ||m.label,typ?m.label:undefined)+
-    `<button class="btn" style="margin:0 0 16px" data-go="eqForm" data-param="${typ?`${cat}|${typ}`:cat}">＋ Hinzufügen</button>`+
+    `<button class="btn" data-go="eqForm" data-param="${typ?`${cat}|${typ}`:cat}" style="margin:0 0 16px">＋ Hinzufügen</button>`+
     jkBild+
     (items?`<div class="list">${items}</div>`:`<div class="empty">Noch nichts erfasst.</div>`);
 }
@@ -1271,57 +1221,57 @@ function tripCard(t){
     const i2=val.indexOf(':');
     return (DB[val.slice(0,i2)]||[]).find(x=>x.id===val.slice(i2+1));
   }).filter(Boolean);
-  const vorbei=!t.abgeschlossen&&t.datum<heute;
   const tripFaenge=DB.faenge.filter(f=>f.tripId===t.id);
+  const vorbei=t.datum<heute&&!t.abgeschlossen;
   return `<div class="card" data-go="tripEdit" data-param="${t.id}" ${vorbei?'style="opacity:.55"':''}>
     <button class="del" data-del="trips" data-id="${t.id}" aria-label="Löschen">✕</button>
     <h3>${esc(tripTitel(t))}</h3>
-    ${t.zielfisch&&t.zielfisch.length?`<div class="tags" style="margin-top:6px">${t.zielfisch.map(fischTag).join('')}</div>`:''}
     <div class="meta">${fmtDate(t.datum)}${p?` · ${esc(p.name)}`:''}${t.abgeschlossen?' · <span style="color:var(--accent)">✓ abgeschlossen</span>':vorbei?' · vorbei':''}</div>
+    ${t.zielfisch&&t.zielfisch.length?`<div class="tags">${t.zielfisch.map(fischTag).join('')}</div>`:''}
     ${t.wetter?`<div class="meta" style="margin-top:6px">🌤 ${esc(t.wetter)}</div>`:''}
     ${sets.length?`<div class="gearline">Sets: <b>${sets.map(g=>esc(g.name)).join(', ')}</b></div>`:''}
     ${koeder.length?`<div class="gearline">Köder: <b>${koeder.map(k=>esc(k.name)).join(', ')}</b></div>`:''}
     ${gewichte.length?`<div class="gearline">Gewichte: <b>${gewichte.map(g=>`${esc(g.name)}${g.gewicht?` ${esc(g.gewicht)}`:''}`).join(', ')}</b></div>`:''}
     ${tripFaenge.length?`<div class="gearline">🐟 Fänge: <b style="color:var(--accent)">${tripFaenge.map(f=>`${esc(f.fischart)} ${f.groesse} cm`).join(', ')}</b></div>`:''}
-    ${(()=>{if(t.abgeschlossen)return'';const w=tripWarnHtml(t.setIds,t.koederIds,t.gewichtIds);return w?`<div style="margin-top:10px">${w}</div>`:''})()}
+    ${t.abgeschlossen?'':(()=>{const w=tripWarnHtml(t.setIds,t.koederIds,t.gewichtIds);return w?`<div style="margin-top:10px">${w}</div>`:''})()}
   </div>`;
 }
 function vTrips(){
-  const aktive=DB.trips.filter(t=>!t.abgeschlossen).sort((a,b)=>a.datum<b.datum?-1:1);
-  const archiv=DB.trips.filter(t=>t.abgeschlossen).length;
-  const items=aktive.map(tripCard).join('');
+  const offene=DB.trips.filter(t=>!t.abgeschlossen).sort((a,b)=>a.datum<b.datum?-1:1);
+  const alte=DB.trips.filter(t=>t.abgeschlossen).length;
+  const items=offene.map(tripCard).join('');
   return header('Trip planen')+
-    `<button class="btn" style="margin:0 0 12px" data-go="tripForm">＋ Trip</button>`+
-    (archiv?`<div class="tile" data-go="tripsArchiv" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:14px 16px;margin-bottom:16px">
+    `<button class="btn" data-go="tripForm" style="margin:0 0 12px">＋ Trip</button>`+
+    (items?`<div class="list">${items}</div>`:`<div class="empty">Noch kein Trip geplant.<br>Zeit, ans Wasser zu kommen! 🎒</div>`)+
+    (alte?`<div class="tile" data-go="tripsArchiv" style="margin-top:14px;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">🗂</span>
-      <div style="flex:1"><div class="name">Vergangene Trips</div><div class="count">${archiv} abgeschlossen</div></div>
-    </div>`:'')+
-    (items?`<div class="list">${items}</div>`:`<div class="empty">Noch kein Trip geplant.<br>Zeit, ans Wasser zu kommen! 🎒</div>`);
+      <div><div class="name">Vergangene Trips</div><div class="count">${alte} abgeschlossen</div></div>
+    </div>`:'');
 }
 function vTripsArchiv(){
   const items=DB.trips.filter(t=>t.abgeschlossen).sort((a,b)=>a.datum<b.datum?1:-1).map(tripCard).join('');
-  return header('Vergangene Trips')+
+  return header('Vergangene Trips','Trip planen')+
     (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine abgeschlossenen Trips.</div>`);
 }
-function tripKoederPills(ziel,checkedIds){
-  ziel=ziel||[];checkedIds=checkedIds||[];
-  return DB.koeder.filter(k=>
-    checkedIds.includes(k.id)
-    ||!ziel.length
-    ||!(k.zielfisch&&k.zielfisch.length)
-    ||k.zielfisch.some(z=>ziel.includes(z))
-  ).map(k=>{
-    const on=checkedIds.includes(k.id);
+function tripKoederPills(ziel,checked){
+  ziel=ziel||[];checked=checked||[];
+  return DB.koeder.filter(k=>{
+    if(!ziel.length)return true;
+    if(checked.includes(k.id))return true;
+    if(!k.zielfisch||!k.zielfisch.length)return true;
+    return k.zielfisch.some(z=>ziel.includes(z));
+  }).map(k=>{
+    const on=checked.includes(k.id);
     return `<label class="chk${on?' on':''}"><input type="checkbox" value="${k.id}" ${on?'checked':''}>${esc(k.name)}</label>`;
   }).join('');
 }
 function updateTripKoederPills(){
-  const zc=document.getElementById('tziel');
-  const kc=document.getElementById('tkoeder');
-  if(!zc||!kc)return;
-  const ziel=[...zc.querySelectorAll('input:checked')].map(c=>c.value);
-  const checked=[...kc.querySelectorAll('input:checked')].map(c=>c.value);
-  kc.innerHTML=tripKoederPills(ziel,checked);
+  const wrap=document.getElementById('tkoeder');
+  const zielWrap=document.getElementById('tziel');
+  if(!wrap||!zielWrap)return;
+  const ziel=[...zielWrap.querySelectorAll('input:checked')].map(c=>c.value);
+  const checked=[...wrap.querySelectorAll('input:checked')].map(c=>c.value);
+  wrap.innerHTML=tripKoederPills(ziel,checked);
 }
 function vTripForm(editId){
   const t=editId?DB.trips.find(x=>x.id===editId):null;
@@ -1330,10 +1280,6 @@ function vTripForm(editId){
   const setPills=DB.gearsets.map(g=>{
     const on=t&&t.setIds&&t.setIds.includes(g.id);
     return `<label class="chk${on?' on':''}"><input type="checkbox" value="${g.id}" ${on?'checked':''}>${esc(g.name)}</label>`;
-  }).join('');
-  const zielPills=RUTEN_ZIELFISCH.map(f=>{
-    const on=t&&t.zielfisch&&t.zielfisch.includes(f);
-    return `<label class="chk${on?' on':''}"><input type="checkbox" value="${f}" ${on?'checked':''}>${f}</label>`;
   }).join('');
   const koederPills=tripKoederPills(t?t.zielfisch:[],t?t.koederIds:[]);
   const gewichtItems=[
@@ -1357,7 +1303,10 @@ function vTripForm(editId){
     <div class="field"><label for="twetter">Wetter-Infos (optional)</label>
       <textarea id="twetter" placeholder="z.B. Bedeckt, 12°C, Westwind 15 km/h, Druck fallend …">${t&&t.wetter?esc(t.wetter):''}</textarea></div>
     <div class="field"><label>Zielfisch (filtert die Köder-Auswahl)</label>
-      <div class="checks" id="tziel">${zielPills}</div></div>
+      <div class="checks" id="tziel">${RUTEN_ZIELFISCH.map(z=>{
+        const on=t&&t.zielfisch&&t.zielfisch.includes(z);
+        return `<label class="chk${on?' on':''}"><input type="checkbox" value="${z}" ${on?'checked':''}>${z}</label>`;
+      }).join('')}</div></div>
     <div class="field"><label>Tacklesets</label>
       ${setPills?`<div class="checks" id="tsets">${setPills}</div>`:`<div class="meta">Noch keine Tacklesets erfasst.</div>`}</div>
     <div class="field"><label>Köder</label>
@@ -1366,9 +1315,7 @@ function vTripForm(editId){
       ${gewichtPills?`<div class="checks" id="tgewichte">${gewichtPills}</div>`:`<div class="meta">Noch keine Gewichte/Jigköpfe erfasst.</div>`}</div>
     <div id="twarn" style="margin-top:16px">${tripWarnHtml(t?t.setIds:[],t?t.koederIds:[],t?t.gewichtIds:[])}</div>
     <button class="btn" type="submit">${t?'Änderungen speichern':'Trip speichern'}</button>
-    ${t?(t.abgeschlossen
-      ?`<button type="button" class="btn ghost" data-act="tripReopen" data-id="${t.id}">↩ Trip wieder öffnen</button>`
-      :`<button type="button" class="btn ghost" data-act="tripDone" data-id="${t.id}">✓ Trip abschliessen</button>`):''}
+    ${t?`<button type="button" class="btn ghost" data-act="${t.abgeschlossen?'tripReopen':'tripDone'}" data-id="${t.id}">${t.abgeschlossen?'↩ Trip wieder öffnen':'✓ Trip abschliessen'}</button>`:''}
   </form>`;
 }
 function saveTrip(editId){
@@ -1410,7 +1357,7 @@ function vKnoten(){
     ${k.foto?`<img class="thumb" src="${k.foto}" alt="Knotenanleitung" data-foto="knoten:${k.id}">`:''}
   </div>`).join('');
   return header('Knoten')+
-    `<button class="btn" style="margin:0 0 16px" data-go="knotenForm">＋ Knoten</button>`+
+    `<button class="btn" data-go="knotenForm" style="margin:0 0 16px">＋ Knoten</button>`+
     (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine Knoten erfasst.<br>Zeit für den FG-Knoten? 🪢</div>`);
 }
 function vKnotenForm(editId){
@@ -1444,118 +1391,6 @@ function saveKnoten(editId){
     DB.knoten.push(Object.assign({id:uid()},werte));
   }
   save();back();
-}
-
-/* ================= Backup via Zwischenablage (Häppchen) ================= */
-let BACKUP_CHUNK=250000; // Zeichen pro Teil – sicher unter Android-Clipboard-Limits
-let chunkExport=null;    // {json,n,kopiert:Set}
-let chunkImport=null;    // {n,teile:{}}
-let chunkFotos=true;
-function backupJson(mitFotos){
-  if(mitFotos)return JSON.stringify(DB);
-  const d=JSON.parse(JSON.stringify(DB));
-  ['plaetze','faenge','knoten'].forEach(coll=>(d[coll]||[]).forEach(x=>{delete x.foto}));
-  d.jigkopfBild=null;
-  return JSON.stringify(d);
-}
-function fmtGroesse(z){
-  return z>1000000?(z/1000000).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(z/1000))+' KB';
-}
-function vChunkExport(){
-  const json=backupJson(chunkFotos);
-  const n=Math.ceil(json.length/BACKUP_CHUNK)||1;
-  if(!chunkExport||chunkExport.json!==json)chunkExport={json,n,kopiert:new Set()};
-  const vollJson=chunkFotos?json:null;
-  const ohneJson=chunkFotos?backupJson(false):json;
-  const vollLen=vollJson?vollJson.length:backupJson(true).length;
-  const knoepfe=Array.from({length:n},(_,ix)=>{
-    const i=ix+1;
-    const ok=chunkExport.kopiert.has(i);
-    return `<button class="btn ${ok?'ghost':''}" data-act="copyChunk" data-i="${i}" style="margin-top:${i===1?0:10}px">${ok?'✓':'📋'} Teil ${i}/${n} kopieren</button>`;
-  }).join('');
-  return header('Backup kopieren')+`
-  <div class="checks" style="margin-bottom:12px">
-    <label class="chk${chunkFotos?' on':''}"><input type="checkbox" id="chkfotos" ${chunkFotos?'checked':''}>📷 Fotos einbeziehen</label>
-  </div>
-  <div class="meta" style="margin-bottom:12px">Komplett: ${fmtGroesse(vollLen)} (${Math.ceil(vollLen/BACKUP_CHUNK)||1} Teile) · Ohne Fotos: ${fmtGroesse(ohneJson.length)} (${Math.ceil(ohneJson.length/BACKUP_CHUNK)||1} Teil${Math.ceil(ohneJson.length/BACKUP_CHUNK)>1?'e':''})${chunkFotos?'':'<br><b>Hinweis:</b> Beim Import dieses Backups sind keine Fotos enthalten.'}</div>
-  <div class="meta" style="margin-bottom:12px">${n===1
-    ?'Passt in einen Teil – kopieren und z.B. in einer Notiz, Datei oder Nachricht sichern.'
-    :`In <b>${n} Teile</b> zerlegt. Jeden Teil einzeln kopieren und einfügen. Beim Import ist die Reihenfolge egal.`}</div>
-  ${knoepfe}
-  <div id="chunkStatus" class="meta" style="text-align:center;margin-top:12px"></div>`;
-}
-function kopiereText(text,cb){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(()=>cb(true)).catch(()=>kopiereFallback(text,cb));
-  }else kopiereFallback(text,cb);
-}
-function kopiereFallback(text,cb){
-  try{
-    const ta=document.createElement('textarea');
-    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);
-    ta.focus();ta.select();ta.setSelectionRange(0,text.length);
-    const ok=document.execCommand('copy');
-    ta.remove();
-    cb(!!ok);
-  }catch(e){cb(false)}
-}
-function copyChunk(i){
-  if(!chunkExport)return;
-  const {json,n}=chunkExport;
-  const teil=json.slice((i-1)*BACKUP_CHUNK,i*BACKUP_CHUNK);
-  kopiereText(`FBAK:${i}:${n}:${teil}`,ok=>{
-    const status=document.getElementById('chunkStatus');
-    if(!ok){if(status)status.textContent='Kopieren blockiert – bitte erneut versuchen.';return}
-    chunkExport.kopiert.add(i);
-    const fertig=chunkExport.kopiert.size>=n;
-    if(fertig){
-      DB.lastBackup=new Date().toISOString().slice(0,10);
-      DB.dirtyCount=0;
-      save(false);
-    }
-    // Button direkt markieren (kein render – das würde den Kopier-Fortschritt verwerfen)
-    const btn=document.querySelector(`[data-act="copyChunk"][data-i="${i}"]`);
-    if(btn){btn.classList.add('ghost');btn.innerHTML=`✓ Teil ${i}/${n} kopieren`}
-    if(status)status.innerHTML=fertig
-      ?'<span style="color:var(--accent)">✓ Alle Teile kopiert – Backup komplett!</span>'
-      :`<span style="color:var(--accent)">✓ Teil ${i}/${n} kopiert</span> – jetzt einfügen, dann den nächsten Teil kopieren.`;
-  });
-}
-function vChunkImport(){
-  const st=chunkImport?`${Object.keys(chunkImport.teile).length}/${chunkImport.n} Teilen erhalten`:'Noch nichts eingefügt';
-  return header('Import einfügen')+`
-  <div class="meta" style="margin-bottom:12px">Füge hier ein kopiertes Backup ein – entweder das ganze Backup oder Teil für Teil (Reihenfolge egal). Sobald alles da ist, startet der Import automatisch.</div>
-  <div class="field" style="margin-top:0"><textarea id="ctext" placeholder="Backup oder Backup-Teil hier einfügen …" style="min-height:160px;font-size:12px"></textarea></div>
-  <button class="btn" data-act="addChunk">＋ Teil hinzufügen</button>
-  <div id="chunkImpStatus" class="meta" style="text-align:center;margin-top:12px">${st}</div>`;
-}
-function addChunk(){
-  const ta=document.getElementById('ctext');
-  const status=document.getElementById('chunkImpStatus');
-  const text=(ta.value||'').trim();
-  if(!text){alert('Bitte zuerst einen Backup-Teil einfügen.');return}
-  // Komplettes JSON direkt?
-  if(text[0]==='{'){chunkImport=null;importJson(text);return}
-  // Es können mehrere FBAK-Teile am Stück eingefügt worden sein
-  const stuecke=text.split(/(?=FBAK:\d+:\d+:)/).filter(s=>s.startsWith('FBAK:'));
-  if(!stuecke.length){alert('Das sieht nicht nach einem Backup-Teil aus (FBAK:… fehlt).');return}
-  for(const s of stuecke){
-    const m=s.match(/^FBAK:(\d+):(\d+):([\s\S]*)$/);
-    if(!m)continue;
-    const i=parseInt(m[1]),n=parseInt(m[2]);
-    if(!chunkImport||chunkImport.n!==n)chunkImport={n,teile:{}};
-    chunkImport.teile[i]=m[3];
-  }
-  ta.value='';
-  const habe=Object.keys(chunkImport.teile).length;
-  if(habe>=chunkImport.n){
-    const ganz=Array.from({length:chunkImport.n},(_,ix)=>chunkImport.teile[ix+1]||'').join('');
-    chunkImport=null;
-    importJson(ganz);
-  }else if(status){
-    status.innerHTML=`<span style="color:var(--accent)">${habe}/${chunkImport.n} Teilen erhalten</span> – nächsten Teil einfügen.`;
-  }
 }
 
 /* ================= Löschen ================= */
