@@ -8,7 +8,7 @@ Alle Daten bleiben auf dem eigenen Gerät.
 ### 🐟 Fänge
 - Fänge erfassen mit Fischart, Grösse, Datum, Uhrzeit, Wetter, Technik und Köder
 - Fangfoto direkt per Kamera oder aus der Galerie (wird automatisch verkleinert)
-- Personal Best und letzter Fang auf dem Dashboard
+- Personal Best und letzter Fang auf dem Dashboard – letzter Fang direkt antippbar
 - Fänge lassen sich Plätzen und Trips zuordnen
 
 ### 📍 Plätze
@@ -22,8 +22,15 @@ Alle Daten bleiben auf dem eigenen Gerät.
   nächsten 14 Tagen abläuft oder bereits abgelaufen ist
 
 ### 🪱 Köder
-- Softbaits und Hardbaits mit Hersteller, Farbe, Grösse und Gewicht
+- Softbaits und Hardbaits mit Hersteller, Grösse und Gewicht (in Gramm)
+- Farbkategorien statt Farbchaos: Schockfarbe / Naturfarbe, jeweils
+  Dunkel / Hell – mehrfach wählbar für Köder in mehreren Farben
 - Zielfisch-Tags für die schnelle Auswahl
+- **Eigenschaften fürs Feintuning:** Aktivität (aktive/passive Fische),
+  Flavored (mit Aroma), geeignete Jahreszeiten und Wassertiefe
+  (Grund / Mittelwasser / Topwater)
+- Listen automatisch A–Z nach Hersteller sortiert
+- **Zielfisch-Filter:** ein Tipp auf „Barsch" zeigt nur noch Barsch-Köder
 
 ### 🎣 Ausrüstung
 - Ruten (inkl. Länge und Wurfgewicht), Rollen, Schnüre und Vorfächer
@@ -55,6 +62,10 @@ Alle Daten bleiben auf dem eigenen Gerät.
 2. „App installieren" wählen (Chrome: Menü → *App installieren*)
 3. Die App startet wie eine native App vom Homescreen und funktioniert
    dank Service Worker auch offline
+
+## 🔮 In Planung
+- **Köderberater:** schlägt anhand von Jahreszeit, Wassertiefe, Zielfisch und
+  Fischlaune den passenden Köder aus der eigenen Box vor
 
 ---
 *Gebaut mit einer einzigen HTML-Datei – kein Framework, kein Build, kein Backend.* 🛠
