@@ -184,6 +184,13 @@ function load(){
     d.rollen.forEach(r=>{if(!r.typ)r.typ='Baitcastrolle'});
     d.koeder.forEach(k=>{if(!k.typ)k.typ='Softbait'});
     d.tt_haken.forEach(h=>{if(!h.hakenart)h.hakenart='Haken'});
+    // Migration: Jahreszeiten sind vom alten Wetter-Feld ins eigene Feld umgezogen
+    const SAISONS=['Winter','Frühling','Sommer','Herbst'];
+    d.koeder.forEach(k=>{
+      if(!k.jahreszeit&&Array.isArray(k.wetter)&&k.wetter.length&&k.wetter.every(v=>SAISONS.includes(v))){
+        k.jahreszeit=k.wetter;k.wetter=[];
+      }
+    });
     // Migration: Farbe und Aktivität von Text auf Mehrfach-Listen
     d.koeder.forEach(k=>{
       if(typeof k.farbe==='string')k.farbe=k.farbe&&k.farbe!=='Diverse Farben'?[k.farbe]:[];
@@ -396,6 +403,8 @@ document.addEventListener('click',function(e){
       if(confirm('Übersichtsbild wirklich entfernen?')){DB.jigkopfBild=null;save();render();}
     }
     else if(act.dataset.act==='export')exportData();
+    else if(act.dataset.act==='koederExport')exportKoeder();
+    else if(act.dataset.act==='koederImportClick'){const i=document.getElementById('importkoeder');if(i)i.click();}
     else if(act.dataset.act==='importClick'){const i=document.getElementById('importfile');if(i)i.click();}
     else if(act.dataset.act==='fotoRemove'){
       fotoData=null;
@@ -431,6 +440,7 @@ document.addEventListener('change',function(e){
   if(e.target.id==='ffoto')fotoChanged(e.target);
   if(e.target.id==='jkbild')jkBildChanged(e.target);
   if(e.target.id==='importfile')importData(e.target);
+  if(e.target.id==='importkoeder')importKoeder(e.target);
 });
 
 /* ================= Erster Start: Name ================= */
@@ -825,6 +835,7 @@ function koederCard(k){
       const teile=[];
       if(k.aktivitaet&&k.aktivitaet.length)teile.push(`🎯 ${k.aktivitaet.map(esc).join(', ')}`);
       if(k.flavored)teile.push(`👅 Flavored: ${esc(k.flavored)}`);
+      if(k.jahreszeit&&k.jahreszeit.length)teile.push(`📅 ${k.jahreszeit.map(esc).join(', ')}`);
       if(k.wetter&&k.wetter.length)teile.push(`🌤 ${k.wetter.map(esc).join(', ')}`);
       if(k.tiefe&&k.tiefe.length)teile.push(`🌊 ${k.tiefe.map(esc).join(', ')}`);
       return teile.length?`<div class="meta" style="margin-top:6px">${teile.join(' · ')}</div>`:'';
@@ -842,7 +853,53 @@ function vKoeder(){
     <div class="tile" data-go="koederList" data-param="Hardbait"><span class="ico">🐟</span>
      <div><div class="name">Hardbaits</div><div class="count">${hb} erfasst</div></div></div>
   </div>
-  <button class="btn" data-go="koederForm">＋ Köder</button>`;
+  <button class="btn" data-go="koederForm">＋ Köder</button>
+  <div class="section-title">Köderbox teilen</div>
+  <div class="rowbtns">
+    <button class="btn ghost" data-act="koederExport" style="margin-top:0">⬇️ Köder exportieren</button>
+    <button class="btn ghost" data-act="koederImportClick" style="margin-top:0">⬆️ Köder importieren</button>
+  </div>
+  <div class="meta" style="margin-top:8px">Tauscht nur die Köderbox aus – Fänge, Plätze und alles andere bleiben unberührt. Schon vorhandene Köder werden beim Import übersprungen.</div>
+  <input type="file" id="importkoeder" accept="application/json,text/plain,application/octet-stream,.json,.txt,.bin" style="display:none">`;
+}
+function koederNormalisieren(k){
+  const SAISONS=['Winter','Frühling','Sommer','Herbst'];
+  if(typeof k.farbe==='string')k.farbe=k.farbe?[k.farbe]:[];
+  if(typeof k.aktivitaet==='string')k.aktivitaet=k.aktivitaet==='Aktive & Passive Fische'?['Aktive Fische','Passive Fische']:k.aktivitaet?[k.aktivitaet]:[];
+  if(typeof k.gewicht==='string'){const w=parseGewicht(k.gewicht);k.gewicht=w!=null?w:null}
+  if(!k.jahreszeit&&Array.isArray(k.wetter)&&k.wetter.length&&k.wetter.every(v=>SAISONS.includes(v))){k.jahreszeit=k.wetter;k.wetter=[]}
+  return k;
+}
+function exportKoeder(){
+  const inhalt=JSON.stringify({app:'tiny-fishing-koeder',stand:new Date().toISOString(),koeder:DB.koeder},null,1);
+  const wer=(DB.userName||'koeder').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const name=`tiny-fishing-koederbox-${wer}-${new Date().toISOString().slice(0,10)}.json`;
+  const a=document.createElement('a');
+  a.href='data:application/json;base64,'+btoa(unescape(encodeURIComponent(inhalt)));
+  a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  alert(`${DB.koeder.length} Köder exportiert.`);
+}
+function importKoeder(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const d=JSON.parse(reader.result);
+      if(!Array.isArray(d.koeder))throw 0;
+      const vorhanden=new Set(DB.koeder.map(k=>k.id));
+      const neue=d.koeder.filter(k=>k&&k.id&&!vorhanden.has(k.id)).map(koederNormalisieren);
+      const uebersprungen=d.koeder.length-neue.length;
+      if(!neue.length){alert(uebersprungen?'Alle Köder aus der Datei sind schon vorhanden.':'Keine Köder in der Datei gefunden.');return}
+      if(!confirm(`${neue.length} Köder importieren${uebersprungen?` (${uebersprungen} schon vorhanden, werden übersprungen)`:''}?`))return;
+      DB.koeder.push(...neue);
+      save();render();
+      alert(`${neue.length} Köder importiert. Petri zur gefüllten Box! 🪱`);
+    }catch(err){alert('Das ist keine gültige Köder-Datei.')}
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 let koederFilter=null;
 function vKoederList(typ){
@@ -902,8 +959,12 @@ function vKoederForm(editId,preTyp){
       }).join('')}</div></div>
     <div class="field"><label for="kflav">Flavored (mit Aroma/Geschmack)</label>
       <select id="kflav">${['','Ja','Nein'].map(a=>`<option value="${a}" ${k&&k.flavored===a?'selected':''}>${a||'– keine Angabe –'}</option>`).join('')}</select></div>
+    <div class="field"><label>Geeignete Jahreszeit</label>
+      <div class="checks" id="kjahreszeit">${['Winter','Frühling','Sommer','Herbst'].map(s=>{
+        const on=k&&k.jahreszeit&&k.jahreszeit.includes(s);
+        return `<label class="chk${on?' on':''}"><input type="checkbox" value="${s}" ${on?'checked':''}>${s}</label>`}).join('')}</div></div>
     <div class="field"><label>Geeignetes Wetter</label>
-      <div class="checks" id="kwetter">${['Winter','Frühling','Sommer','Herbst'].map(s=>{
+      <div class="checks" id="kwetter">${['Sonnig','Bewölkt'].map(s=>{
         const on=k&&k.wetter&&k.wetter.includes(s);
         return `<label class="chk${on?' on':''}"><input type="checkbox" value="${s}" ${on?'checked':''}>${s}</label>`}).join('')}</div></div>
     <div class="field"><label>Geeignete Wassertiefe</label>
@@ -927,6 +988,7 @@ function saveKoeder(editId){
     zielfisch:[...document.querySelectorAll('#kziel input:checked')].map(c=>c.value),
     aktivitaet:[...document.querySelectorAll('#kakt input:checked')].map(c=>c.value),
     flavored:document.getElementById('kflav').value,
+    jahreszeit:[...document.querySelectorAll('#kjahreszeit input:checked')].map(c=>c.value),
     wetter:[...document.querySelectorAll('#kwetter input:checked')].map(c=>c.value),
     tiefe:[...document.querySelectorAll('#ktiefe input:checked')].map(c=>c.value),
     notizen:document.getElementById('knotiz').value.trim()
