@@ -816,6 +816,7 @@ function koederCard(k){
     ${(()=>{
       const teile=[];
       if(k.aktivitaet)teile.push(`🎯 ${esc(k.aktivitaet)}`);
+      if(k.flavored)teile.push(`👅 Flavored: ${esc(k.flavored)}`);
       if(k.wetter&&k.wetter.length)teile.push(`🌤 ${k.wetter.map(esc).join(', ')}`);
       if(k.tiefe&&k.tiefe.length)teile.push(`🌊 ${k.tiefe.map(esc).join(', ')}`);
       return teile.length?`<div class="meta" style="margin-top:6px">${teile.join(' · ')}</div>`:'';
@@ -869,7 +870,13 @@ function vKoederForm(editId,preTyp){
     <div class="field"><label for="ksub">Subkategorie (optional)</label>
       <input type="text" id="ksub" placeholder="z.B. Swimbait, Shad, Crankbait …" value="${k&&k.subkategorie?esc(k.subkategorie):''}"></div>
     <div class="field"><label for="kf">Farbe</label>
-      <input type="text" id="kf" required placeholder="z.B. Motoroil" value="${k?esc(k.farbe):''}"></div>
+      <select id="kf" required>${(()=>{
+        const kat=['Schockfarbe Dunkel','Schockfarbe Hell','Naturfarbe Dunkel','Naturfarbe Hell'];
+        const opts=['<option value="">– bitte wählen –</option>'];
+        if(k&&k.farbe&&!kat.includes(k.farbe))opts.push(`<option value="${esc(k.farbe)}" selected>${esc(k.farbe)} (bisheriger Wert)</option>`);
+        kat.forEach(f=>opts.push(`<option value="${esc(f)}" ${k&&k.farbe===f?'selected':''}>${f}</option>`));
+        return opts.join('');
+      })()}</select></div>
     <div class="field"><label for="kg">Grösse (cm)</label>
       <input type="number" id="kg" required min="0.5" max="60" step="0.1" inputmode="decimal" placeholder="z.B. 7" value="${k?k.groesse:''}"></div>
     <div class="field"><label for="kgew">Gewicht (g, optional)</label>
@@ -880,6 +887,8 @@ function vKoederForm(editId,preTyp){
         return `<label class="chk${on?' on':''}"><input type="checkbox" value="${f}" ${on?'checked':''}>${f}</label>`}).join('')}</div></div>
     <div class="field"><label for="kakt">Aktivität</label>
       <select id="kakt">${['','Aktive Fische','Passive Fische'].map(a=>`<option value="${a}" ${k&&k.aktivitaet===a?'selected':''}>${a||'– keine Angabe –'}</option>`).join('')}</select></div>
+    <div class="field"><label for="kflav">Flavored (mit Aroma/Geschmack)</label>
+      <select id="kflav">${['','Ja','Nein'].map(a=>`<option value="${a}" ${k&&k.flavored===a?'selected':''}>${a||'– keine Angabe –'}</option>`).join('')}</select></div>
     <div class="field"><label>Geeignetes Wetter</label>
       <div class="checks" id="kwetter">${['Winter','Frühling','Sommer','Herbst'].map(s=>{
         const on=k&&k.wetter&&k.wetter.includes(s);
@@ -904,6 +913,7 @@ function saveKoeder(editId){
     gewicht:document.getElementById('kgew').value!==''?parseFloat(document.getElementById('kgew').value):null,
     zielfisch:[...document.querySelectorAll('#kziel input:checked')].map(c=>c.value),
     aktivitaet:document.getElementById('kakt').value,
+    flavored:document.getElementById('kflav').value,
     wetter:[...document.querySelectorAll('#kwetter input:checked')].map(c=>c.value),
     tiefe:[...document.querySelectorAll('#ktiefe input:checked')].map(c=>c.value),
     notizen:document.getElementById('knotiz').value.trim()
