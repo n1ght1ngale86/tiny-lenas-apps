@@ -184,6 +184,14 @@ function load(){
     d.rollen.forEach(r=>{if(!r.typ)r.typ='Baitcastrolle'});
     d.koeder.forEach(k=>{if(!k.typ)k.typ='Softbait'});
     d.tt_haken.forEach(h=>{if(!h.hakenart)h.hakenart='Haken'});
+    // Migration: Farbe und Aktivität von Text auf Mehrfach-Listen
+    d.koeder.forEach(k=>{
+      if(typeof k.farbe==='string')k.farbe=k.farbe&&k.farbe!=='Diverse Farben'?[k.farbe]:[];
+      if(typeof k.aktivitaet==='string'){
+        k.aktivitaet=k.aktivitaet==='Aktive & Passive Fische'?['Aktive Fische','Passive Fische']
+          :k.aktivitaet?[k.aktivitaet]:[];
+      }
+    });
     // Migration: Köder-Gewicht von Text ("32g") auf Zahl (Gramm)
     d.koeder.forEach(k=>{
       if(typeof k.gewicht==='string'){
@@ -525,7 +533,7 @@ function vPB(){
     const p=DB.plaetze.find(x=>x.id===f.platzId);
     return `<div class="card" data-go="fangEdit" data-param="${f.id}">
       <h3>${i===0?'🏆 ':''}${esc(f.fischart)} · <span style="color:var(--accent)">${f.groesse} cm</span></h3>
-      <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)} (${esc(k.farbe)})`:''}</div>
+      <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` (${k.farbe.map(esc).join(', ')})`:''}`:''}</div>
       ${f.foto?`<img class="thumb" src="${f.foto}" alt="Fangfoto" data-foto="faenge:${f.id}">`:''}
     </div>`;
   }).join('');
@@ -654,7 +662,7 @@ function fangCard(f,showPlatz=true){
   return `<div class="card" data-go="fangEdit" data-param="${f.id}">
     <button class="del" data-del="faenge" data-id="${f.id}" aria-label="Löschen">✕</button>
     <h3>${esc(f.fischart)} · <span style="color:var(--accent)">${f.groesse} cm</span></h3>
-    <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${showPlatz&&p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)} (${esc(k.farbe)})`:''}${t?` · 🎒 ${esc(tripTitel(t))}`:''}</div>
+    <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${showPlatz&&p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` (${k.farbe.map(esc).join(', ')})`:''}`:''}${t?` · 🎒 ${esc(tripTitel(t))}`:''}</div>
     ${f.foto?`<img class="thumb" src="${f.foto}" alt="Fangfoto" data-foto="faenge:${f.id}">`:''}
   </div>`;
 }
@@ -690,7 +698,7 @@ function vFangForm(preselPlatz,editId){
   const tripOpts=DB.trips.slice().sort((a,b)=>a.datum<b.datum?1:-1)
     .map(t=>`<option value="${t.id}" ${preTrip===t.id?'selected':''}>${esc(tripTitel(t))} · ${fmtDate(t.datum)}</option>`).join('');
   const koederOpts=DB.koeder.length
-    ?DB.koeder.map(k=>`<option value="${k.id}" ${f&&f.koederId===k.id?'selected':''}>${esc(k.hersteller)} ${esc(k.name)} · ${esc(k.farbe)} · ${k.groesse} cm</option>`).join('')
+    ?DB.koeder.map(k=>`<option value="${k.id}" ${f&&f.koederId===k.id?'selected':''}>${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` · ${k.farbe.map(esc).join(', ')}`:''} · ${k.groesse} cm</option>`).join('')
     :'';
   const selPlatz=f?f.platzId:preselPlatz;
   const platzOpts=DB.plaetze.map(p=>`<option value="${p.id}" ${p.id===selPlatz?'selected':''}>${esc(p.name)}</option>`).join('');
@@ -811,11 +819,11 @@ function koederCard(k){
   return `<div class="card" data-go="koederEdit" data-param="${k.id}">
     <button class="del" data-del="koeder" data-id="${k.id}" aria-label="Löschen">✕</button>
     <h3>${esc(k.hersteller)} ${esc(k.name)}</h3>
-    <div class="meta">${k.typ?`${esc(k.typ)} · `:''}${k.subkategorie?`${esc(k.subkategorie)} · `:''}${esc(k.farbe)} · ${k.groesse} cm${k.gewicht!=null&&k.gewicht!==''?` · ${k.gewicht}g`:''}</div>
+    <div class="meta">${k.typ?`${esc(k.typ)} · `:''}${k.subkategorie?`${esc(k.subkategorie)} · `:''}${k.farbe&&k.farbe.length?`${k.farbe.map(esc).join(', ')} · `:''}${k.groesse} cm${k.gewicht!=null&&k.gewicht!==''?` · ${k.gewicht}g`:''}</div>
     ${k.zielfisch&&k.zielfisch.length?`<div class="tags">${k.zielfisch.map(fischTag).join('')}</div>`:''}
     ${(()=>{
       const teile=[];
-      if(k.aktivitaet)teile.push(`🎯 ${esc(k.aktivitaet)}`);
+      if(k.aktivitaet&&k.aktivitaet.length)teile.push(`🎯 ${k.aktivitaet.map(esc).join(', ')}`);
       if(k.flavored)teile.push(`👅 Flavored: ${esc(k.flavored)}`);
       if(k.wetter&&k.wetter.length)teile.push(`🌤 ${k.wetter.map(esc).join(', ')}`);
       if(k.tiefe&&k.tiefe.length)teile.push(`🌊 ${k.tiefe.map(esc).join(', ')}`);
@@ -869,14 +877,16 @@ function vKoederForm(editId,preTyp){
       <select id="ktyp">${['Softbait','Hardbait'].map(t=>`<option ${typSel===t?'selected':''}>${t}</option>`).join('')}</select></div>
     <div class="field"><label for="ksub">Subkategorie (optional)</label>
       <input type="text" id="ksub" placeholder="z.B. Swimbait, Shad, Crankbait …" value="${k&&k.subkategorie?esc(k.subkategorie):''}"></div>
-    <div class="field"><label for="kf">Farbe</label>
-      <select id="kf" required>${(()=>{
+    <div class="field"><label>Farbe (mehrere wählbar)</label>
+      <div class="checks" id="kfarbe">${(()=>{
         const kat=['Schockfarbe Dunkel','Schockfarbe Hell','Naturfarbe Dunkel','Naturfarbe Hell'];
-        const opts=['<option value="">– bitte wählen –</option>'];
-        if(k&&k.farbe&&!kat.includes(k.farbe))opts.push(`<option value="${esc(k.farbe)}" selected>${esc(k.farbe)} (bisheriger Wert)</option>`);
-        kat.forEach(f=>opts.push(`<option value="${esc(f)}" ${k&&k.farbe===f?'selected':''}>${f}</option>`));
-        return opts.join('');
-      })()}</select></div>
+        const vorhanden=k&&k.farbe?k.farbe:[];
+        const extra=vorhanden.filter(f=>!kat.includes(f));
+        return [...kat,...extra].map(f=>{
+          const on=vorhanden.includes(f);
+          return `<label class="chk${on?' on':''}"><input type="checkbox" value="${esc(f)}" ${on?'checked':''}>${esc(f)}${extra.includes(f)?' (bisher)':''}</label>`;
+        }).join('');
+      })()}</div></div>
     <div class="field"><label for="kg">Grösse (cm)</label>
       <input type="number" id="kg" required min="0.5" max="60" step="0.1" inputmode="decimal" placeholder="z.B. 7" value="${k?k.groesse:''}"></div>
     <div class="field"><label for="kgew">Gewicht (g, optional)</label>
@@ -885,8 +895,11 @@ function vKoederForm(editId,preTyp){
       <div class="checks" id="kziel">${RUTEN_ZIELFISCH.map(f=>{
         const on=k&&k.zielfisch&&k.zielfisch.includes(f);
         return `<label class="chk${on?' on':''}"><input type="checkbox" value="${f}" ${on?'checked':''}>${f}</label>`}).join('')}</div></div>
-    <div class="field"><label for="kakt">Aktivität</label>
-      <select id="kakt">${['','Aktive Fische','Passive Fische'].map(a=>`<option value="${a}" ${k&&k.aktivitaet===a?'selected':''}>${a||'– keine Angabe –'}</option>`).join('')}</select></div>
+    <div class="field"><label>Aktivität (mehrere wählbar)</label>
+      <div class="checks" id="kakt">${['Aktive Fische','Passive Fische'].map(a=>{
+        const on=k&&k.aktivitaet&&k.aktivitaet.includes(a);
+        return `<label class="chk${on?' on':''}"><input type="checkbox" value="${a}" ${on?'checked':''}>${a}</label>`;
+      }).join('')}</div></div>
     <div class="field"><label for="kflav">Flavored (mit Aroma/Geschmack)</label>
       <select id="kflav">${['','Ja','Nein'].map(a=>`<option value="${a}" ${k&&k.flavored===a?'selected':''}>${a||'– keine Angabe –'}</option>`).join('')}</select></div>
     <div class="field"><label>Geeignetes Wetter</label>
@@ -908,11 +921,11 @@ function saveKoeder(editId){
     name:document.getElementById('kn').value.trim(),
     typ:document.getElementById('ktyp').value,
     subkategorie:document.getElementById('ksub').value.trim(),
-    farbe:document.getElementById('kf').value.trim(),
+    farbe:[...document.querySelectorAll('#kfarbe input:checked')].map(c=>c.value),
     groesse:parseFloat(document.getElementById('kg').value),
     gewicht:document.getElementById('kgew').value!==''?parseFloat(document.getElementById('kgew').value):null,
     zielfisch:[...document.querySelectorAll('#kziel input:checked')].map(c=>c.value),
-    aktivitaet:document.getElementById('kakt').value,
+    aktivitaet:[...document.querySelectorAll('#kakt input:checked')].map(c=>c.value),
     flavored:document.getElementById('kflav').value,
     wetter:[...document.querySelectorAll('#kwetter input:checked')].map(c=>c.value),
     tiefe:[...document.querySelectorAll('#ktiefe input:checked')].map(c=>c.value),
