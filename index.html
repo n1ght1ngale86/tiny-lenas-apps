@@ -184,6 +184,13 @@ function load(){
     d.rollen.forEach(r=>{if(!r.typ)r.typ='Baitcastrolle'});
     d.koeder.forEach(k=>{if(!k.typ)k.typ='Softbait'});
     d.tt_haken.forEach(h=>{if(!h.hakenart)h.hakenart='Haken'});
+    // Migration: Köder-Gewicht von Text ("32g") auf Zahl (Gramm)
+    d.koeder.forEach(k=>{
+      if(typeof k.gewicht==='string'){
+        const w=parseGewicht(k.gewicht);
+        k.gewicht=w!=null?w:null;
+      }
+    });
     // Migration: Wurfgewicht und Länge aus Bezeichnung parsen (z.B. "1.98m / 3-14g")
     d.ruten.forEach(r=>{
       if(r.wgMin==null&&r.wgMax==null){
@@ -364,6 +371,11 @@ document.addEventListener('click',function(e){
   if(del){delItem(del.dataset.del,del.dataset.id);e.stopPropagation();return}
   const foto=e.target.closest('[data-foto]');
   if(foto){showFoto(foto.dataset.foto);return}
+  const kf=e.target.closest('[data-kfilter]');
+  if(kf){
+    koederFilter=koederFilter===kf.dataset.kfilter?null:kf.dataset.kfilter;
+    render();return;
+  }
   const act=e.target.closest('[data-act]');
   if(act){
     if(act.dataset.act==='back')back();
@@ -799,7 +811,7 @@ function koederCard(k){
   return `<div class="card" data-go="koederEdit" data-param="${k.id}">
     <button class="del" data-del="koeder" data-id="${k.id}" aria-label="Löschen">✕</button>
     <h3>${esc(k.hersteller)} ${esc(k.name)}</h3>
-    <div class="meta">${k.typ?`${esc(k.typ)} · `:''}${k.subkategorie?`${esc(k.subkategorie)} · `:''}${esc(k.farbe)} · ${k.groesse} cm${k.gewicht?` · ${esc(k.gewicht)}`:''}</div>
+    <div class="meta">${k.typ?`${esc(k.typ)} · `:''}${k.subkategorie?`${esc(k.subkategorie)} · `:''}${esc(k.farbe)} · ${k.groesse} cm${k.gewicht!=null&&k.gewicht!==''?` · ${k.gewicht}g`:''}</div>
     ${k.zielfisch&&k.zielfisch.length?`<div class="tags">${k.zielfisch.map(fischTag).join('')}</div>`:''}
     ${k.notizen?`<div class="meta" style="margin-top:8px;font-style:italic">📝 ${esc(k.notizen)}</div>`:''}
   </div>`;
@@ -816,11 +828,25 @@ function vKoeder(){
   </div>
   <button class="btn" data-go="koederForm">＋ Köder</button>`;
 }
+let koederFilter=null;
 function vKoederList(typ){
-  const items=DB.koeder.filter(k=>(k.typ||'Softbait')===typ).map(koederCard).join('');
+  const alle=DB.koeder.filter(k=>(k.typ||'Softbait')===typ);
+  // Nur Zielfische anbieten, die in dieser Liste auch vorkommen
+  const vorhanden=RUTEN_ZIELFISCH.filter(z=>alle.some(k=>k.zielfisch&&k.zielfisch.includes(z)));
+  if(koederFilter&&!vorhanden.includes(koederFilter))koederFilter=null;
+  const filterPills=vorhanden.length?`<div class="checks" style="margin:0 0 14px">${vorhanden.map(z=>
+    `<label class="chk${koederFilter===z?' on':''}" data-kfilter="${z}" style="cursor:pointer">${z}</label>`).join('')}</div>`:'';
+  const gefiltert=koederFilter?alle.filter(k=>k.zielfisch&&k.zielfisch.includes(koederFilter)):alle;
+  const sortiert=gefiltert.slice().sort((a,b)=>
+    (a.hersteller||'').localeCompare(b.hersteller||'','de',{sensitivity:'base'})
+    ||(a.name||'').localeCompare(b.name||'','de',{sensitivity:'base'}));
+  const items=sortiert.map(koederCard).join('');
   return header(`${typ}s`,'Köder')+
     `<button class="btn" data-go="koederForm" data-param="${typ}" style="margin:0 0 16px">＋ Köder</button>`+
-    (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine ${typ}s erfasst.<br>Die Köderbox will gefüllt werden.</div>`);
+    filterPills+
+    (items?`<div class="list">${items}</div>`
+      :koederFilter?`<div class="empty">Keine ${typ}s mit Zielfisch ${koederFilter}.</div>`
+      :`<div class="empty">Noch keine ${typ}s erfasst.<br>Die Köderbox will gefüllt werden.</div>`);
 }
 function vKoederForm(editId,preTyp){
   const k=editId?DB.koeder.find(x=>x.id===editId):null;
@@ -839,8 +865,8 @@ function vKoederForm(editId,preTyp){
       <input type="text" id="kf" required placeholder="z.B. Motoroil" value="${k?esc(k.farbe):''}"></div>
     <div class="field"><label for="kg">Grösse (cm)</label>
       <input type="number" id="kg" required min="0.5" max="60" step="0.1" inputmode="decimal" placeholder="z.B. 7" value="${k?k.groesse:''}"></div>
-    <div class="field"><label for="kgew">Gewicht (optional)</label>
-      <input type="text" id="kgew" placeholder="z.B. 32g" value="${k&&k.gewicht?esc(k.gewicht):''}"></div>
+    <div class="field"><label for="kgew">Gewicht (g, optional)</label>
+      <input type="number" id="kgew" min="0" step="0.1" inputmode="decimal" placeholder="z.B. 32" value="${k&&k.gewicht!=null&&k.gewicht!==''?k.gewicht:''}"></div>
     <div class="field"><label>Zielfisch</label>
       <div class="checks">${RUTEN_ZIELFISCH.map(f=>{
         const on=k&&k.zielfisch&&k.zielfisch.includes(f);
@@ -858,7 +884,7 @@ function saveKoeder(editId){
     subkategorie:document.getElementById('ksub').value.trim(),
     farbe:document.getElementById('kf').value.trim(),
     groesse:parseFloat(document.getElementById('kg').value),
-    gewicht:document.getElementById('kgew').value.trim(),
+    gewicht:document.getElementById('kgew').value!==''?parseFloat(document.getElementById('kgew').value):null,
     zielfisch:[...document.querySelectorAll('.checks input:checked')].map(c=>c.value),
     notizen:document.getElementById('knotiz').value.trim()
   };
