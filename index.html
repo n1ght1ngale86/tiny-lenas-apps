@@ -437,6 +437,11 @@ document.addEventListener('change',function(e){
     if(e.target.closest('#tsets')||e.target.closest('#tkoeder')||e.target.closest('#tgewichte'))updateTripWarn();
     return;
   }
+  if(e.target.id==='fktyp'){
+    const sel=document.getElementById('fkoeder');
+    if(sel&&!sel.disabled)sel.innerHTML=fangKoederOpts(e.target.value,null);
+    return;
+  }
   if(e.target.id==='ffoto')fotoChanged(e.target);
   if(e.target.id==='jkbild')jkBildChanged(e.target);
   if(e.target.id==='importfile')importData(e.target);
@@ -480,7 +485,7 @@ function vDash(){
   <div class="brand">
     <div class="eyebrow">Tiny Lena's Fishing App</div>
     <h1>Petri, ${esc(DB.userName)} 🎣</h1>
-    <p>Alles lokal auf diesem Gerät. Kein Konto, keine Cloud.</p>
+    <p>Dein Tackle und Fang Kodex!</p>
   </div>
   <div class="tiles">
     <div class="tile" data-go="plaetze"><span class="ico">🏞️</span><div><div class="name">Plätze</div><div class="count">${DB.plaetze.length} erfasst</div></div></div>
@@ -669,10 +674,11 @@ function fangCard(f,showPlatz=true){
   const k=DB.koeder.find(x=>x.id===f.koederId);
   const p=DB.plaetze.find(x=>x.id===f.platzId);
   const t=DB.trips.find(x=>x.id===f.tripId);
+  const g=DB.gearsets.find(x=>x.id===f.setId);
   return `<div class="card" data-go="fangEdit" data-param="${f.id}">
     <button class="del" data-del="faenge" data-id="${f.id}" aria-label="Löschen">✕</button>
     <h3>${esc(f.fischart)} · <span style="color:var(--accent)">${f.groesse} cm</span></h3>
-    <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${showPlatz&&p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` (${k.farbe.map(esc).join(', ')})`:''}`:''}${t?` · 🎒 ${esc(tripTitel(t))}`:''}</div>
+    <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${showPlatz&&p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` (${k.farbe.map(esc).join(', ')})`:''}`:''}${g?` · 🎣 ${esc(g.name)}`:''}${t?` · 🎒 ${esc(tripTitel(t))}`:''}</div>
     ${f.foto?`<img class="thumb" src="${f.foto}" alt="Fangfoto" data-foto="faenge:${f.id}">`:''}
   </div>`;
 }
@@ -692,6 +698,13 @@ function bestTrip(){
     ||sortiert.find(t=>t.datum>heute)
     ||null;
 }
+function fangKoederOpts(typ,selectedId){
+  const liste=DB.koeder.filter(k=>(k.typ||'Softbait')===typ)
+    .sort((a,b)=>(a.hersteller||'').localeCompare(b.hersteller||'','de',{sensitivity:'base'})
+      ||(a.name||'').localeCompare(b.name||'','de',{sensitivity:'base'}));
+  return `<option value="">– kein Köder gewählt –</option>`+liste.map(k=>
+    `<option value="${k.id}" ${selectedId===k.id?'selected':''}>${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` · ${k.farbe.map(esc).join(', ')}`:''} · ${k.groesse} cm</option>`).join('');
+}
 function vFangForm(preselPlatz,editId){
   const f=editId?DB.faenge.find(x=>x.id===editId):null;
   fotoData=f?f.foto||null:null;
@@ -707,9 +720,8 @@ function vFangForm(preselPlatz,editId){
   if(!f&&!preselPlatz&&pt&&pt.platzId)preselPlatz=pt.platzId;
   const tripOpts=DB.trips.slice().sort((a,b)=>a.datum<b.datum?1:-1)
     .map(t=>`<option value="${t.id}" ${preTrip===t.id?'selected':''}>${esc(tripTitel(t))} · ${fmtDate(t.datum)}</option>`).join('');
-  const koederOpts=DB.koeder.length
-    ?DB.koeder.map(k=>`<option value="${k.id}" ${f&&f.koederId===k.id?'selected':''}>${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` · ${k.farbe.map(esc).join(', ')}`:''} · ${k.groesse} cm</option>`).join('')
-    :'';
+  const selKoeder=f?DB.koeder.find(x=>x.id===f.koederId):null;
+  const fangKoederTyp=selKoeder?(selKoeder.typ||'Softbait'):'Softbait';
   const selPlatz=f?f.platzId:preselPlatz;
   const platzOpts=DB.plaetze.map(p=>`<option value="${p.id}" ${p.id===selPlatz?'selected':''}>${esc(p.name)}</option>`).join('');
   const datum=f?f.datum:new Date().toISOString().slice(0,10);
@@ -721,10 +733,20 @@ function vFangForm(preselPlatz,editId){
       <input type="number" id="fgr" required min="1" max="300" step="0.5" inputmode="decimal" placeholder="z.B. 34" value="${f?f.groesse:''}"></div>
     <div class="field"><label for="ftech">Technik</label>
       <select id="ftech">${TECHNIKEN.map(t=>`<option ${f&&f.technik===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label for="fktyp">Ködertyp</label>
+      <select id="fktyp">${['Softbait','Hardbait'].map(ty=>`<option ${fangKoederTyp===ty?'selected':''}>${ty}</option>`).join('')}</select></div>
     <div class="field"><label for="fkoeder">Köder</label>
-      ${koederOpts
-        ?`<select id="fkoeder"><option value="">– kein Köder gewählt –</option>${koederOpts}</select>`
+      ${DB.koeder.length
+        ?`<select id="fkoeder">${fangKoederOpts(fangKoederTyp,f?f.koederId:null)}</select>`
         :`<select id="fkoeder" disabled><option value="">Noch keine Köder erfasst</option></select>`}</div>
+    <div class="field"><label for="fset">Tackle-Combo (optional)</label>
+      ${DB.gearsets.length
+        ?`<select id="fset"><option value="">– kein Set gewählt –</option>${DB.gearsets.map(g=>{
+            const r=DB.ruten.find(x=>x.id===g.rutenId),ro=DB.rollen.find(x=>x.id===g.rollenId);
+            const detail=[r&&r.name,ro&&ro.name].filter(Boolean).join(' / ');
+            return `<option value="${g.id}" ${f&&f.setId===g.id?'selected':''}>${esc(g.name)}${detail?` · ${esc(detail)}`:''}</option>`;
+          }).join('')}</select>`
+        :`<select id="fset" disabled><option value="">Noch keine Tacklesets erfasst</option></select>`}</div>
     <div class="field"><label for="fplatz">Platz</label>
       ${platzOpts
         ?`<select id="fplatz"><option value="">– kein Platz gewählt –</option>${platzOpts}</select>`
@@ -808,6 +830,7 @@ function saveFang(editId){
     groesse:parseFloat(document.getElementById('fgr').value),
     technik:document.getElementById('ftech').value,
     koederId:document.getElementById('fkoeder').value||null,
+    setId:(()=>{const el=document.getElementById('fset');return el&&!el.disabled?el.value||null:null})(),
     platzId:document.getElementById('fplatz').value||null,
     tripId:(()=>{const el=document.getElementById('ftrip');return el&&!el.disabled?el.value||null:null})(),
     datum:document.getElementById('fdatum').value,
