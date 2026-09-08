@@ -73,17 +73,27 @@ header .sub{font-size:13px;color:var(--muted);display:block;font-weight:400;marg
   border:2px solid rgba(74,222,128,.6);
   box-shadow:0 0 14px rgba(74,222,128,.25),inset 0 0 10px rgba(74,222,128,.07);
 }
-.tile:active{border-color:var(--accent-dim)}
+.tile:active{border-color:var(--accent-dim);transform:scale(.985)}
+.tile,.card,.btn{transition:border-color .15s,transform .1s}
 .tile .ico{font-size:24px}
 .tile .name{font-weight:650;font-size:16px;margin-top:8px}
 .tile .count{color:var(--muted);font-size:13px;margin-top:2px}
 .lastcatch{
   margin-top:14px;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius);padding:14px 16px;
+  border-left:3px solid var(--accent);
+  border-radius:var(--radius);padding:14px 15px 14px 16px;
 }
 .lastcatch .lbl{color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
 .lastcatch .val{margin-top:4px;font-size:15px}
 .lastcatch .val b{color:var(--accent)}
+.rang{border-left:3px solid transparent}
+.rang-1{border-left-color:#E8C34A;background:linear-gradient(90deg,rgba(232,195,74,.08),var(--surface) 55%)}
+.rang-2{border-left-color:#B9C4CE;background:linear-gradient(90deg,rgba(185,196,206,.07),var(--surface) 55%)}
+.rang-3{border-left-color:#C88A5A;background:linear-gradient(90deg,rgba(200,138,90,.07),var(--surface) 55%)}
+@media (prefers-reduced-motion:reduce){
+  .tile,.card,.btn{transition:none}
+  .tile:active,.card:active,.btn:active{transform:none}
+}
 
 /* ---------- Listen ---------- */
 .list{display:flex;flex-direction:column;gap:10px}
@@ -91,7 +101,7 @@ header .sub{font-size:13px;color:var(--muted);display:block;font-weight:400;marg
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
   padding:14px 16px;cursor:pointer;position:relative;
 }
-.card:active{border-color:var(--accent-dim)}
+.card:active{border-color:var(--accent-dim);transform:scale(.99)}
 .card h3{font-size:16px;font-weight:650}
 .card .meta{color:var(--muted);font-size:13px;margin-top:3px}
 .card .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -120,7 +130,9 @@ header .sub{font-size:13px;color:var(--muted);display:block;font-weight:400;marg
   font-size:16px;font-weight:650;padding:15px;cursor:pointer;margin-top:16px;
   font-family:inherit;
 }
-.btn:active{opacity:.85}
+.btn{box-shadow:0 0 14px rgba(232,161,60,.18)}
+.btn.ghost{box-shadow:none}
+.btn:active{opacity:.85;transform:scale(.985)}
 .btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--line)}
 .btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
 .rowbtns{display:flex;gap:10px}
@@ -1315,7 +1327,7 @@ function topGearSektion(titel,eintraege,leer){
   const medaillen=['🥇','🥈','🥉','4.','5.'];
   return `<div class="section-title">${titel}</div>`+
     (eintraege.length?eintraege.map((e,i)=>
-      `<div class="card" style="cursor:default;margin-bottom:10px">
+      `<div class="card rang${i<3?` rang-${i+1}`:''}" style="cursor:default;margin-bottom:10px">
         <h3>${medaillen[i]} ${e.label}</h3>
         <div class="meta">${e.n} ${e.n===1?'Fang':'Fänge'} · grösster ${e.max} cm</div>
       </div>`).join('')
