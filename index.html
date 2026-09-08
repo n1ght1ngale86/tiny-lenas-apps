@@ -114,6 +114,10 @@ header .sub{font-size:13px;color:var(--muted);display:block;font-weight:400;marg
 .tag.f-zander{color:#EAC54F;border-color:#776329;background:rgba(234,197,79,.08)}
 .tag.f-hecht{color:#E5534B;border-color:#7a2e2a;background:rgba(229,83,75,.08)}
 .tag.f-salmo{color:#58A6FF;border-color:#2b527d;background:rgba(88,166,255,.08)}
+.cglow-barsch{border:2px solid rgba(249,142,60,.55);box-shadow:0 0 10px rgba(249,142,60,.16)}
+.cglow-zander{border:2px solid rgba(234,197,79,.55);box-shadow:0 0 10px rgba(234,197,79,.16)}
+.cglow-hecht{border:2px solid rgba(229,83,75,.55);box-shadow:0 0 10px rgba(229,83,75,.16)}
+.cglow-salmo{border:2px solid rgba(88,166,255,.55);box-shadow:0 0 10px rgba(88,166,255,.16)}
 .card .del{
   position:absolute;top:10px;right:10px;background:none;border:none;
   color:var(--muted);font-size:17px;cursor:pointer;padding:6px;line-height:1;
@@ -688,7 +692,8 @@ function fangCard(f,showPlatz=true){
   const k=DB.koeder.find(x=>x.id===f.koederId);
   const p=DB.plaetze.find(x=>x.id===f.platzId);
   const g=DB.gearsets.find(x=>x.id===f.setId);
-  return `<div class="card" data-go="fangEdit" data-param="${f.id}">
+  const fc=FISCH_FARBEN[f.fischart];
+  return `<div class="card${fc?` cglow-${fc}`:''}" data-go="fangEdit" data-param="${f.id}">
     <button class="del" data-del="faenge" data-id="${f.id}" aria-label="Löschen">✕</button>
     <h3>${esc(f.fischart)} · <span style="color:var(--accent)">${f.groesse} cm</span></h3>
     <div class="meta">${fmtDate(f.datum)}${f.zeit?` · ${f.zeit} Uhr`:''}${f.wetter?` · ${esc(f.wetter)}`:''}${showPlatz&&p?` · ${esc(p.name)}`:''}${f.technik?` · ${esc(f.technik)}`:''}${k?` · ${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` (${k.farbe.map(esc).join(', ')})`:''}`:''}${g?` · 🎣 ${esc(g.name)}`:''}</div>
