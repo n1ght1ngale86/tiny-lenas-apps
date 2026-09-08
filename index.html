@@ -610,7 +610,7 @@ function vPlaetze(){
   }).join('');
   return header('Plätze')+
     `<button class="btn" data-go="platzForm" style="margin:0 0 16px">＋ Angelplatz</button>`+
-    (items||`<div class="empty">Noch keine Plätze erfasst.<br>Leg mit deinem ersten Angelplatz los.</div>`);
+    (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine Plätze erfasst.<br>Leg mit deinem ersten Angelplatz los.</div>`);
 }
 
 function vPlatzForm(editId){
