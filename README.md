@@ -1,15 +1,24 @@
 # 🎣 Tiny Lena's Fishing App
 
-Ein persönliches Fanglogbuch als PWA – **komplett lokal, ohne Konto, ohne Cloud, ohne Tracking.**
+**Dein Tackle und Fang Kodex!**
+Ein persönliches Fanglogbuch als PWA – komplett lokal, ohne Konto, ohne Cloud, ohne Tracking.
 Alle Daten bleiben auf dem eigenen Gerät.
 
 ## Funktionen
 
 ### 🐟 Fänge
 - Fänge erfassen mit Fischart, Grösse, Datum, Uhrzeit, Wetter, Technik und Köder
+- Köderwahl zweistufig: erst Softbait/Hardbait wählen, dann übersichtliche,
+  nach Hersteller sortierte Auswahl
+- **Tackle-Combo:** optional festhalten, mit welchem Set (Rute/Rolle) der Fisch dran war
 - Fangfoto direkt per Kamera oder aus der Galerie (wird automatisch verkleinert)
 - Personal Best und letzter Fang auf dem Dashboard – letzter Fang direkt antippbar
-- Fänge lassen sich Plätzen und Trips zuordnen
+- Fänge lassen sich Plätzen zuordnen
+
+### 🏆 Top Gear
+- Ranglisten aus den eigenen Fängen: **Top Tacklesets, Top Rigs & Techniken, Top Köder**
+- Zeigt pro Eintrag Fanganzahl und grössten Fisch – was fängt viel, was fängt gross?
+- Der fängigste Köder steht als Teaser direkt auf dem Dashboard
 
 ### 📍 Plätze
 - Angelplätze mit Art (See, Fluss, …), Grösse und vorkommenden Fischarten
@@ -27,10 +36,13 @@ Alle Daten bleiben auf dem eigenen Gerät.
   Dunkel / Hell – mehrfach wählbar für Köder in mehreren Farben
 - Zielfisch-Tags für die schnelle Auswahl
 - **Eigenschaften fürs Feintuning:** Aktivität (aktive/passive Fische),
-  Flavored (mit Aroma), geeignete Jahreszeiten und Wassertiefe
-  (Grund / Mittelwasser / Topwater)
+  Flavored (mit Aroma), geeignete Jahreszeit, geeignetes Wetter
+  (Sonnig / Bewölkt) und Wassertiefe (Grund / Mittelwasser / Topwater)
 - Listen automatisch A–Z nach Hersteller sortiert
 - **Zielfisch-Filter:** ein Tipp auf „Barsch" zeigt nur noch Barsch-Köder
+- **Köderbox teilen:** nur die Köder exportieren und auf einem anderen Gerät
+  in ein bestehendes Profil dazuimportieren – Fänge & Co. bleiben unberührt,
+  Duplikate werden automatisch übersprungen
 
 ### 🎣 Ausrüstung
 - Ruten (inkl. Länge und Wurfgewicht), Rollen, Schnüre und Vorfächer
@@ -39,13 +51,6 @@ Alle Daten bleiben auf dem eigenen Gerät.
 ### 🧰 Terminal Tackle
 - Gewichte, Haken, Jigköpfe (mit eigenem Übersichtsbild, z.B. Grössentabelle),
   Wirbel/Snaps und Sonstiges
-
-### 🎒 Trip-Planung
-- Trips mit Platz, Datum, Wetter-Notizen, Tacklesets, Ködern und Gewichten planen
-- Zielfisch-Auswahl filtert die Köderliste automatisch
-- **Tackle-Check:** warnt, wenn ein Köder zu schwer oder zu leicht für das
-  Wurfgewicht der eingepackten Ruten ist
-- Fänge direkt dem Trip zuordnen, Trips abschliessen und im Archiv nachschlagen
 
 ### 💡 Tipps & Tools
 - Werkzeugliste (Kescher, Zange, …)
@@ -64,8 +69,8 @@ Alle Daten bleiben auf dem eigenen Gerät.
    dank Service Worker auch offline
 
 ## 🔮 In Planung
-- **Köderberater:** schlägt anhand von Jahreszeit, Wassertiefe, Zielfisch und
-  Fischlaune den passenden Köder aus der eigenen Box vor
+- **Köderberater:** schlägt anhand von Jahreszeit, Wetter, Wassertiefe, Zielfisch
+  und Fischlaune den passenden Köder aus der eigenen Box vor
 
 ---
 *Gebaut mit einer einzigen HTML-Datei – kein Framework, kein Build, kein Backend.* 🛠
