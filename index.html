@@ -61,6 +61,18 @@ header .sub{font-size:13px;color:var(--muted);display:block;font-weight:400;marg
   display:flex;flex-direction:column;justify-content:space-between;
   transition:border-color .15s;
 }
+.glow-gelb{
+  border:2px solid rgba(232,161,60,.75);
+  box-shadow:0 0 14px rgba(232,161,60,.28),inset 0 0 10px rgba(232,161,60,.07);
+}
+.glow-blau{
+  border:2px solid rgba(77,150,255,.65);
+  box-shadow:0 0 14px rgba(77,150,255,.25),inset 0 0 10px rgba(77,150,255,.07);
+}
+.glow-gruen{
+  border:2px solid rgba(74,222,128,.6);
+  box-shadow:0 0 14px rgba(74,222,128,.25),inset 0 0 10px rgba(74,222,128,.07);
+}
 .tile:active{border-color:var(--accent-dim)}
 .tile .ico{font-size:24px}
 .tile .name{font-weight:650;font-size:16px;margin-top:8px}
@@ -480,13 +492,13 @@ function vDash(){
     <p>Dein Tackle und Fang Kodex!</p>
   </div>
   <div class="tiles">
-    <div class="tile" data-go="plaetze"><span class="ico">🏞️</span><div><div class="name">Plätze</div><div class="count">${DB.plaetze.length} erfasst</div></div></div>
-    <div class="tile" data-go="faenge"><span class="ico">🐟</span><div><div class="name">Fänge</div><div class="count">${DB.faenge.length} erfasst</div></div></div>
-    <div class="tile" data-go="koeder"><span class="ico">🪝</span><div><div class="name">Köder</div><div class="count">${DB.koeder.length} erfasst</div></div></div>
-    <div class="tile" data-go="equipment"><span class="ico">🎣</span><div><div class="name">Ausrüstung</div><div class="count">${DB.gearsets.length} Tacklesets</div></div></div>
-    <div class="tile" data-go="terminal"><span class="ico">🧰</span><div><div class="name">Terminal Tackle</div><div class="count">${EQ_TERMINAL.reduce((s,k)=>s+DB[k].length,0)} erfasst</div></div></div>
-    <div class="tile" data-go="tipps"><span class="ico">💡</span><div><div class="name">Tipps & Tools</div><div class="count">${DB.tools.length+DB.knoten.length} erfasst</div></div></div>
-    <div class="tile" data-go="topgear" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
+    <div class="tile glow-blau" data-go="plaetze"><span class="ico">🏞️</span><div><div class="name">Plätze</div><div class="count">${DB.plaetze.length} erfasst</div></div></div>
+    <div class="tile glow-blau" data-go="faenge"><span class="ico">🐟</span><div><div class="name">Fänge</div><div class="count">${DB.faenge.length} erfasst</div></div></div>
+    <div class="tile glow-blau" data-go="koeder"><span class="ico">🪝</span><div><div class="name">Köder</div><div class="count">${DB.koeder.length} erfasst</div></div></div>
+    <div class="tile glow-blau" data-go="equipment"><span class="ico">🎣</span><div><div class="name">Ausrüstung</div><div class="count">${DB.gearsets.length} Tacklesets</div></div></div>
+    <div class="tile glow-blau" data-go="terminal"><span class="ico">🧰</span><div><div class="name">Terminal Tackle</div><div class="count">${EQ_TERMINAL.reduce((s,k)=>s+DB[k].length,0)} erfasst</div></div></div>
+    <div class="tile glow-gruen" data-go="tipps"><span class="ico">💡</span><div><div class="name">Tipps & Tools</div><div class="count">${DB.tools.length+DB.knoten.length} erfasst</div></div></div>
+    <div class="tile glow-gelb" data-go="topgear" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">🏆</span>
       <div style="flex:1"><div class="name">Top Gear</div>
       <div class="count">${(()=>{
@@ -497,7 +509,7 @@ function vDash(){
         return 'Was fängt am besten? Statistik aus deinen Fängen';
       })()}</div></div>
     </div>
-    <div class="tile" data-go="pb" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
+    <div class="tile glow-gelb" data-go="pb" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">🏆</span>
       <div style="flex:1"><div class="name">PB – Personal Best</div>
       <div class="count">${(()=>{const t=pbListe()[0];return t?`Grösster Fang: ${esc(t.fischart)} · ${t.groesse} cm`:'Noch keine Fänge erfasst'})()}</div></div>
