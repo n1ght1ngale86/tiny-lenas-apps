@@ -3,7 +3,7 @@
 **Dein Tackle und Fang Kodex!**
 Ein persönliches Fanglogbuch als PWA – komplett lokal, ohne Konto, ohne Cloud, ohne Tracking.
 Alle Daten bleiben auf dem eigenen Gerät. 
-Tiny Lena's Fishing App kann auch komfortable im Webbrowser am PC verwendet werden.
+Tiny Lena's Fishing App kann auch komfortabel im Webbrowser am PC verwendet werden.
 
 ## Funktionen
 
