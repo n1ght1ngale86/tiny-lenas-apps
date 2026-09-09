@@ -14,11 +14,15 @@ Alle Daten bleiben auf dem eigenen Gerät.
 - Fangfoto direkt per Kamera oder aus der Galerie (wird automatisch verkleinert)
 - Personal Best und letzter Fang auf dem Dashboard – letzter Fang direkt antippbar
 - Fänge lassen sich Plätzen zuordnen
+- Fangkarten leuchten in der Farbe der Fischart – die Liste liest sich auf einen Blick
 
-### 🏆 Top Gear
-- Ranglisten aus den eigenen Fängen: **Top Tacklesets, Top Rigs & Techniken, Top Köder**
-- Zeigt pro Eintrag Fanganzahl und grössten Fisch – was fängt viel, was fängt gross?
-- Der fängigste Köder steht als Teaser direkt auf dem Dashboard
+### 📊 Stats & Top Gear
+- **Fänge nach Art:** farbiger Donut-Ring mit Gesamtzahl und Prozent-Legende,
+  in den Fischart-Farben der App
+- **Ranking Plätze:** Balkendiagramm – wo beisst es am besten?
+- **Top Gear:** Podium mit Gold/Silber/Bronze für Tacklesets, Rigs & Techniken
+  und Köder – inkl. Balken, Fanganzahl und grösstem Fisch pro Eintrag
+- Die Kennzahlen (Fänge, Arten, Top-Köder) stehen als Teaser direkt auf dem Dashboard
 
 ### 📍 Plätze
 - Angelplätze mit Art (See, Fluss, …), Grösse und vorkommenden Fischarten
@@ -55,6 +59,11 @@ Alle Daten bleiben auf dem eigenen Gerät.
 ### 💡 Tipps & Tools
 - Werkzeugliste (Kescher, Zange, …)
 - Knoten-Sammlung mit Anleitungsbildern
+
+## ✨ Design
+- Dunkles Design mit farbigen Glow-Kacheln: Gold für Auswertung & PB,
+  Blau für den Arbeitsbereich, Grün für Tipps
+- Alle Diagramme handgemacht in SVG/CSS – kein Chart-Framework
 
 ## 💾 Daten & Backup
 - Alles wird lokal im Browser-Speicher abgelegt (localStorage)
