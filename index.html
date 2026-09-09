@@ -118,6 +118,16 @@ header .sub{font-size:13px;color:var(--muted);display:block;font-weight:400;marg
 .cglow-zander{border:2px solid rgba(234,197,79,.55);box-shadow:0 0 10px rgba(234,197,79,.16)}
 .cglow-hecht{border:2px solid rgba(229,83,75,.55);box-shadow:0 0 10px rgba(229,83,75,.16)}
 .cglow-salmo{border:2px solid rgba(88,166,255,.55);box-shadow:0 0 10px rgba(88,166,255,.16)}
+.donutwrap{display:flex;justify-content:center;padding:6px 0 2px}
+.donutlegende{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:14px}
+.donutlegende .eintrag{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+.donutlegende .punkt{width:9px;height:9px;border-radius:50%;flex:none}
+.donutlegende b{color:var(--text)}
+.statbar{display:flex;align-items:center;gap:10px;margin-top:11px}
+.statbar .lbl{flex:0 0 92px;font-size:13.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.statbar .spur{flex:1;height:9px;border-radius:99px;background:rgba(255,255,255,.05)}
+.statbar .wert{flex:none;font-size:13.5px;font-weight:700;min-width:24px;text-align:right}
+.statbar .fuellung{height:100%;border-radius:99px;min-width:9px}
 .card .del{
   position:absolute;top:10px;right:10px;background:none;border:none;
   color:var(--muted);font-size:17px;cursor:pointer;padding:6px;line-height:1;
@@ -392,7 +402,7 @@ function render(){
     eqForm:p=>{const i=p.indexOf('|');return i>-1?vEqForm(p.slice(0,i),null,p.slice(i+1)):vEqForm(p)},
     eqEdit:p=>{const i=p.indexOf(':');return vEqForm(p.slice(0,i),p.slice(i+1))},
     gearsetForm:p=>vGearsetForm(null,p), gearsetEdit:p=>vGearsetForm(p), setList:vSetList,
-    topgear:vTopGear,
+    topgear:vTopGear, stats:vStats,
     tipps:vTippsTools, knoten:vKnoten, knotenForm:p=>vKnotenForm(), knotenEdit:p=>vKnotenForm(p)
   };
   app.innerHTML=views[cur.v](cur.p);
@@ -522,6 +532,11 @@ function vDash(){
         if(beste){const k=DB.koeder.find(x=>x.id===beste[0]);if(k)return `Top-Köder: ${esc(k.hersteller)} ${esc(k.name)} (${beste[1]} ${beste[1]===1?'Fang':'Fänge'})`}
         return 'Was fängt am besten? Statistik aus deinen Fängen';
       })()}</div></div>
+    </div>
+    <div class="tile glow-gelb" data-go="stats" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
+      <span class="ico">📊</span>
+      <div style="flex:1"><div class="name">Stats</div>
+      <div class="count">${DB.faenge.length?`${DB.faenge.length} ${DB.faenge.length===1?'Fang':'Fänge'} · ${new Set(DB.faenge.map(f=>f.fischart)).size} Arten`:'Deine Fänge in Zahlen'}</div></div>
     </div>
     <div class="tile glow-gelb" data-go="pb" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">🏆</span>
@@ -1310,6 +1325,69 @@ function parseGewicht(s){
   return m?parseFloat(m[1].replace(',','.')):null;
 }
 
+/* ================= Stats ================= */
+const STAT_FISCHFARBEN={'Barsch':'#F98E3C','Zander':'#EAC54F','Hecht':'#E5534B','Forelle':'#58A6FF','Salmoniden':'#58A6FF','Wels':'#A78BFA','Sonstige':'#6B7683'};
+const STAT_PALETTE=['#4ADE80','#A78BFA','#22D3EE','#E8A13C','#F472B6','#58A6FF','#EAC54F'];
+function statFischFarbe(art){
+  if(STAT_FISCHFARBEN[art])return STAT_FISCHFARBEN[art];
+  if(/^Weissfisch/.test(art))return '#9AA7B3';
+  return '#6B7683';
+}
+function kurzArt(art){return art.split(' (')[0]}
+function donutSvg(daten,total){
+  // daten: [{label,n,farbe}] absteigend sortiert
+  const R=62,U=2*Math.PI*R,luecke=daten.length>1?Math.min(10,U*0.02):0;
+  let offset=U*0.25; // bei 12 Uhr starten
+  const segmente=daten.map(d=>{
+    const laenge=Math.max(U*(d.n/total)-luecke,2);
+    const s=`<circle cx="80" cy="80" r="${R}" fill="none" stroke="${d.farbe}" stroke-width="15"
+      stroke-linecap="round" stroke-dasharray="${laenge} ${U-laenge}" stroke-dashoffset="${offset}"/>`;
+    offset-=U*(d.n/total);
+    return s;
+  }).join('');
+  return `<svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Fangverteilung">
+    ${segmente}
+    <text x="80" y="76" text-anchor="middle" fill="var(--text)" font-size="30" font-weight="800" font-family="inherit">${total}</text>
+    <text x="80" y="96" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="inherit">${total===1?'Fang':'Fänge'}</text>
+  </svg>`;
+}
+function statBalken(eintraege,farbFn){
+  // eintraege: [{label,n}] absteigend
+  const max=eintraege[0].n;
+  return eintraege.map((e,i)=>
+    `<div class="statbar">
+      <div class="lbl">${e.label}</div>
+      <div class="spur"><div class="fuellung" style="width:${Math.round(e.n/max*100)}%;background:${farbFn(e,i)}"></div></div>
+      <div class="wert">${e.n}</div>
+    </div>`).join('');
+}
+function vStats(){
+  const proArt={};
+  DB.faenge.forEach(f=>{proArt[f.fischart]=(proArt[f.fischart]||0)+1});
+  const arten=Object.entries(proArt).map(([art,n])=>({label:kurzArt(art),n,farbe:statFischFarbe(art)}))
+    .sort((a,b)=>b.n-a.n);
+  const total=DB.faenge.length;
+  const artenHtml=arten.length
+    ?`<div class="card" style="cursor:default">
+        <div class="donutwrap">${donutSvg(arten,total)}</div>
+        <div class="donutlegende">${arten.map(a=>
+          `<div class="eintrag"><span class="punkt" style="background:${a.farbe}"></span>${esc(a.label)} <b>${Math.round(a.n/total*100)}%</b></div>`).join('')}</div>
+      </div>`
+    :`<div class="empty">Noch keine Fänge erfasst.<br>Ohne Fisch keine Statistik 😉</div>`;
+  const proPlatz={};
+  DB.faenge.forEach(f=>{if(f.platzId)proPlatz[f.platzId]=(proPlatz[f.platzId]||0)+1});
+  const plaetze=Object.entries(proPlatz).map(([id,n])=>{
+    const p=DB.plaetze.find(x=>x.id===id);
+    return p?{label:esc(p.name),n}:null;
+  }).filter(Boolean).sort((a,b)=>b.n-a.n).slice(0,8);
+  const platzHtml=plaetze.length
+    ?`<div class="card" style="cursor:default">${statBalken(plaetze,(e,i)=>STAT_PALETTE[i%STAT_PALETTE.length])}</div>`
+    :`<div class="empty">Noch keine Fänge mit Platz erfasst.</div>`;
+  return header('Stats','Deine Fänge in Zahlen')+
+    `<div class="section-title">🐟 Fänge nach Art</div>`+artenHtml+
+    `<div class="section-title">📍 Ranking Plätze</div>`+platzHtml;
+}
+
 /* ================= Top Gear ================= */
 function topRang(getter,aufloeser){
   const stats={};
@@ -1328,11 +1406,17 @@ function topRang(getter,aufloeser){
 }
 function topGearSektion(titel,eintraege,leer){
   const medaillen=['🥇','🥈','🥉','4.','5.'];
+  const rangFarben=['#E8C34A','#B9C4CE','#C88A5A','#6B7683','#6B7683'];
+  const max=eintraege.length?eintraege[0].n:1;
   return `<div class="section-title">${titel}</div>`+
     (eintraege.length?eintraege.map((e,i)=>
       `<div class="card rang${i<3?` rang-${i+1}`:''}" style="cursor:default;margin-bottom:10px">
         <h3>${medaillen[i]} ${e.label}</h3>
-        <div class="meta">${e.n} ${e.n===1?'Fang':'Fänge'} · grösster ${e.max} cm</div>
+        <div class="statbar" style="margin-top:9px">
+          <div class="spur"><div class="fuellung" style="width:${Math.round(e.n/max*100)}%;background:${rangFarben[i]}"></div></div>
+          <div class="wert">${e.n}</div>
+        </div>
+        <div class="meta" style="margin-top:7px">${e.n} ${e.n===1?'Fang':'Fänge'} · grösster ${e.max} cm</div>
       </div>`).join('')
     :`<div class="empty">${leer}</div>`);
 }
