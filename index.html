@@ -402,7 +402,7 @@ function render(){
     eqForm:p=>{const i=p.indexOf('|');return i>-1?vEqForm(p.slice(0,i),null,p.slice(i+1)):vEqForm(p)},
     eqEdit:p=>{const i=p.indexOf(':');return vEqForm(p.slice(0,i),p.slice(i+1))},
     gearsetForm:p=>vGearsetForm(null,p), gearsetEdit:p=>vGearsetForm(p), setList:vSetList,
-    topgear:vTopGear, stats:vStats,
+    stats:vStats,
     tipps:vTippsTools, knoten:vKnoten, knotenForm:p=>vKnotenForm(), knotenEdit:p=>vKnotenForm(p)
   };
   app.innerHTML=views[cur.v](cur.p);
@@ -522,21 +522,18 @@ function vDash(){
     <div class="tile glow-blau" data-go="equipment"><span class="ico">🎣</span><div><div class="name">Ausrüstung</div><div class="count">${DB.gearsets.length} Tacklesets</div></div></div>
     <div class="tile glow-blau" data-go="terminal"><span class="ico">🧰</span><div><div class="name">Terminal Tackle</div><div class="count">${EQ_TERMINAL.reduce((s,k)=>s+DB[k].length,0)} erfasst</div></div></div>
     <div class="tile glow-gruen" data-go="tipps"><span class="ico">💡</span><div><div class="name">Tipps & Tools</div><div class="count">${DB.tools.length+DB.knoten.length} erfasst</div></div></div>
-    <div class="tile glow-gelb" data-go="topgear" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
-      <span class="ico">🏆</span>
-      <div style="flex:1"><div class="name">Top Gear</div>
-      <div class="count">${(()=>{
-        const stats={};
-        DB.faenge.forEach(f=>{if(!f.koederId)return;stats[f.koederId]=(stats[f.koederId]||0)+1});
-        const beste=Object.entries(stats).sort((a,b)=>b[1]-a[1])[0];
-        if(beste){const k=DB.koeder.find(x=>x.id===beste[0]);if(k)return `Top-Köder: ${esc(k.hersteller)} ${esc(k.name)} (${beste[1]} ${beste[1]===1?'Fang':'Fänge'})`}
-        return 'Was fängt am besten? Statistik aus deinen Fängen';
-      })()}</div></div>
-    </div>
     <div class="tile glow-gelb" data-go="stats" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">📊</span>
       <div style="flex:1"><div class="name">Stats</div>
-      <div class="count">${DB.faenge.length?`${DB.faenge.length} ${DB.faenge.length===1?'Fang':'Fänge'} · ${new Set(DB.faenge.map(f=>f.fischart)).size} Arten`:'Deine Fänge in Zahlen'}</div></div>
+      <div class="count">${(()=>{
+        if(!DB.faenge.length)return 'Deine Fänge in Zahlen – mit Top Gear';
+        let s=`${DB.faenge.length} ${DB.faenge.length===1?'Fang':'Fänge'} · ${new Set(DB.faenge.map(f=>f.fischart)).size} Arten`;
+        const zaehler={};
+        DB.faenge.forEach(f=>{if(f.koederId)zaehler[f.koederId]=(zaehler[f.koederId]||0)+1});
+        const beste=Object.entries(zaehler).sort((a,b)=>b[1]-a[1])[0];
+        if(beste){const k=DB.koeder.find(x=>x.id===beste[0]);if(k)s+=` · Top: ${esc(k.name)}`}
+        return s;
+      })()}</div></div>
     </div>
     <div class="tile glow-gelb" data-go="pb" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">🏆</span>
@@ -1383,9 +1380,24 @@ function vStats(){
   const platzHtml=plaetze.length
     ?`<div class="card" style="cursor:default">${statBalken(plaetze,(e,i)=>STAT_PALETTE[i%STAT_PALETTE.length])}</div>`
     :`<div class="empty">Noch keine Fänge mit Platz erfasst.</div>`;
-  return header('Stats','Deine Fänge in Zahlen')+
+  const sets=topRang(f=>f.setId,id=>{
+    const g=DB.gearsets.find(x=>x.id===id);
+    if(!g)return null;
+    const r=DB.ruten.find(x=>x.id===g.rutenId),ro=DB.rollen.find(x=>x.id===g.rollenId);
+    const detail=[r&&r.name,ro&&ro.name].filter(Boolean).join(' / ');
+    return `${esc(g.name)}${detail?` <span style="color:var(--muted);font-weight:400">· ${esc(detail)}</span>`:''}`;
+  });
+  const techniken=topRang(f=>f.technik,t2=>esc(t2));
+  const koeder=topRang(f=>f.koederId,id=>{
+    const k=DB.koeder.find(x=>x.id===id);
+    return k?`${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` <span style="color:var(--muted);font-weight:400">· ${k.farbe.map(esc).join(', ')}</span>`:''}`:null;
+  });
+  return header('Stats','Zahlen & Top Gear')+
     `<div class="section-title">🐟 Fänge nach Art</div>`+artenHtml+
-    `<div class="section-title">📍 Ranking Plätze</div>`+platzHtml;
+    `<div class="section-title">📍 Ranking Plätze</div>`+platzHtml+
+    topGearSektion('🎣 Top Tacklesets',sets,'Noch keine Fänge mit Tackle-Combo erfasst.')+
+    topGearSektion('🪝 Top Rigs & Techniken',techniken,'Noch keine Fänge mit Technik erfasst.')+
+    topGearSektion('🪱 Top Köder',koeder,'Noch keine Fänge mit Köder erfasst.');
 }
 
 /* ================= Top Gear ================= */
@@ -1419,24 +1431,6 @@ function topGearSektion(titel,eintraege,leer){
         <div class="meta" style="margin-top:7px">${e.n} ${e.n===1?'Fang':'Fänge'} · grösster ${e.max} cm</div>
       </div>`).join('')
     :`<div class="empty">${leer}</div>`);
-}
-function vTopGear(){
-  const sets=topRang(f=>f.setId,id=>{
-    const g=DB.gearsets.find(x=>x.id===id);
-    if(!g)return null;
-    const r=DB.ruten.find(x=>x.id===g.rutenId),ro=DB.rollen.find(x=>x.id===g.rollenId);
-    const detail=[r&&r.name,ro&&ro.name].filter(Boolean).join(' / ');
-    return `${esc(g.name)}${detail?` <span style="color:var(--muted);font-weight:400">· ${esc(detail)}</span>`:''}`;
-  });
-  const techniken=topRang(f=>f.technik,t2=>esc(t2));
-  const koeder=topRang(f=>f.koederId,id=>{
-    const k=DB.koeder.find(x=>x.id===id);
-    return k?`${esc(k.hersteller)} ${esc(k.name)}${k.farbe&&k.farbe.length?` <span style="color:var(--muted);font-weight:400">· ${k.farbe.map(esc).join(', ')}</span>`:''}`:null;
-  });
-  return header('Top Gear','Was fängt am besten?')+
-    topGearSektion('🎣 Top Tacklesets',sets,'Noch keine Fänge mit Tackle-Combo erfasst.')+
-    topGearSektion('🪝 Top Rigs & Techniken',techniken,'Noch keine Fänge mit Technik erfasst.')+
-    topGearSektion('🪱 Top Köder',koeder,'Noch keine Fänge mit Köder erfasst.');
 }
 
 /* ================= Tipps & Tools ================= */
