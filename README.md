@@ -2,7 +2,7 @@
 
 **Dein Tackle und Fang Kodex!**
 Ein persönliches Fanglogbuch als PWA – komplett lokal, ohne Konto, ohne Cloud, ohne Tracking.
-Alle Daten bleiben auf dem eigenen Gerät. 
+Alle Daten bleiben auf dem eigenen Gerät.
 Tiny Lena's Fishing App kann auch komfortabel im Webbrowser am PC verwendet werden.
 
 ## Funktionen
@@ -52,18 +52,18 @@ Tiny Lena's Fishing App kann auch komfortabel im Webbrowser am PC verwendet werd
 ### 🎣 Ausrüstung
 - Ruten (inkl. Länge und Wurfgewicht), Rollen, Schnüre und Vorfächer
 - **Tacklesets:** Rute + Rolle + Schnur + Vorfach zu fertigen Combos kombinieren
-
-### 🧰 Terminal Tackle
-- Gewichte, Haken, Jigköpfe (mit eigenem Übersichtsbild, z.B. Grössentabelle),
-  Wirbel/Snaps und Sonstiges
-
-### 💡 Tipps & Tools
-- Werkzeugliste (Kescher, Zange, …)
-- Knoten-Sammlung mit Anleitungsbildern
+- **Terminal Tackle** direkt integriert:
+  - Haken und Jigköpfe mit Grössen, Gewichten und eigenem Übersichtsbild
+    (z.B. Grössentabelle)
+  - **Rigs:** komplette Montagen strukturiert erfassen – Rig-Typ (Free, Texas,
+    Carolina, Dropshot, Cheburashka), Gewicht, Zubehör (Glasperle, Gummistopper,
+    Wirbel) und Zielfisch in Farbe
 
 ## ✨ Design
-- Dunkles Design mit farbigen Glow-Kacheln: Gold für Auswertung & PB,
-  Blau für den Arbeitsbereich, Grün für Tipps
+- Dunkles Design mit farbigen Glow-Kacheln: Blau fürs Erfassen (Plätze, Fänge,
+  Köder, Ausrüstung), Grün für die Stats, Gold für den Personal Best
+- Fangkarten-Glow und Diagramme in den Fischart-Farben – ein durchgängiges
+  Farbleitsystem
 - Alle Diagramme handgemacht in SVG/CSS – kein Chart-Framework
 
 ## 💾 Daten & Backup
@@ -80,7 +80,8 @@ Tiny Lena's Fishing App kann auch komfortabel im Webbrowser am PC verwendet werd
 
 ## 🔮 In Planung
 - **Köderberater:** schlägt anhand von Jahreszeit, Wetter, Wassertiefe, Zielfisch
-  und Fischlaune den passenden Köder aus der eigenen Box vor
+  und Fischlaune den passenden Köder aus der eigenen Box vor – mit den
+  strukturierten Rigs vielleicht sogar mit kompletter Montage-Empfehlung
 
 ---
 *Gebaut mit einer einzigen HTML-Datei – kein Framework, kein Build, kein Backend.* 🛠
