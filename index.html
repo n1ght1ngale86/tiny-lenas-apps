@@ -220,6 +220,8 @@ function load(){
     d.rollen.forEach(r=>{if(!r.typ)r.typ='Baitcastrolle'});
     d.koeder.forEach(k=>{if(!k.typ)k.typ='Softbait'});
     d.tt_haken.forEach(h=>{if(!h.hakenart)h.hakenart='Haken'});
+    // Migration: Technik 'Jigkopf / Faulenzen' heisst jetzt schlicht 'Jigkopf'
+    d.faenge.forEach(f=>{if(f.technik==='Jigkopf / Faulenzen')f.technik='Jigkopf'});
     // Migration: Jahreszeiten sind vom alten Wetter-Feld ins eigene Feld umgezogen
     const SAISONS=['Winter','Frühling','Sommer','Herbst'];
     d.koeder.forEach(k=>{
@@ -342,7 +344,7 @@ function fischTag(name){
 }
 
 const FISCHARTEN=['Barsch','Zander','Hecht','Forelle','Weissfisch (Rotauge, Laube usw.)','Wels','Sonstige'];
-const TECHNIKEN=['Free Rig','Texas Rig','Carolina Rig','Drop Shot','Ned Rig','Wacky Rig','Cheburashka','Jigkopf / Faulenzen','Spinnfischen (Einleiern)','Jerkbait / Twitchen','Crankbait','Vertikalangeln','Ansitz / Grundmontage','Posenmontage','Sonstige'];
+const TECHNIKEN=['Free Rig','Texas Rig','Carolina Rig','Drop Shot','Ned Rig','Wacky Rig','Cheburashka','Jigkopf','Spinnfischen (Einleiern)','Jerkbait / Twitchen','Crankbait','Vertikalangeln','Ansitz / Grundmontage','Posenmontage','Sonstige'];
 const PLATZ_FISCHE=['Weissfische','Barsch','Zander','Hecht','Salmoniden'];
 const PLATZ_ARTEN=['See','Fluss','Teich','Bach','Salzwasser'];
 const PLATZ_GROESSEN=['Klein','Mittel','Gross'];
@@ -402,8 +404,7 @@ function render(){
     eqForm:p=>{const i=p.indexOf('|');return i>-1?vEqForm(p.slice(0,i),null,p.slice(i+1)):vEqForm(p)},
     eqEdit:p=>{const i=p.indexOf(':');return vEqForm(p.slice(0,i),p.slice(i+1))},
     gearsetForm:p=>vGearsetForm(null,p), gearsetEdit:p=>vGearsetForm(p), setList:vSetList,
-    stats:vStats,
-    tipps:vTippsTools, knoten:vKnoten, knotenForm:p=>vKnotenForm(), knotenEdit:p=>vKnotenForm(p)
+    stats:vStats
   };
   app.innerHTML=views[cur.v](cur.p);
   window.scrollTo(0,0);
@@ -458,7 +459,6 @@ document.addEventListener('submit',function(e){
   else if(kind==='koeder')saveKoeder(e.target.dataset.edit);
   else if(kind==='gearset')saveGearset(e.target.dataset.edit);
   else if(kind==='eq')saveEq(e.target.dataset.cat,e.target.dataset.edit);
-  else if(kind==='knoten')saveKnoten(e.target.dataset.edit);
 });
 document.addEventListener('change',function(e){
   if(e.target.matches('.checks input')){
@@ -520,9 +520,7 @@ function vDash(){
     <div class="tile glow-blau" data-go="faenge"><span class="ico">🐟</span><div><div class="name">Fänge</div><div class="count">${DB.faenge.length} erfasst</div></div></div>
     <div class="tile glow-blau" data-go="koeder"><span class="ico">🪝</span><div><div class="name">Köder</div><div class="count">${DB.koeder.length} erfasst</div></div></div>
     <div class="tile glow-blau" data-go="equipment"><span class="ico">🎣</span><div><div class="name">Ausrüstung</div><div class="count">${DB.gearsets.length} Tacklesets</div></div></div>
-    <div class="tile glow-blau" data-go="terminal"><span class="ico">🧰</span><div><div class="name">Terminal Tackle</div><div class="count">${EQ_TERMINAL.reduce((s,k)=>s+DB[k].length,0)} erfasst</div></div></div>
-    <div class="tile glow-gruen" data-go="tipps"><span class="ico">💡</span><div><div class="name">Tipps & Tools</div><div class="count">${DB.tools.length+DB.knoten.length} erfasst</div></div></div>
-    <div class="tile glow-gelb" data-go="stats" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
+    <div class="tile glow-gruen" data-go="stats" style="grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:14px;padding:16px">
       <span class="ico">📊</span>
       <div style="flex:1"><div class="name">Stats</div>
       <div class="count">${(()=>{
@@ -1035,14 +1033,11 @@ const EQ_META={
   rollen:{label:'Meine Rollen',ico:'⚙️',ph:'z.B. Dark Wolf Ultra KF-50S'},
   schnur:{label:'Schnur',ico:'🧵',ph:'z.B. Geflecht 0.08mm, 6kg'},
   vorfach:{label:'Vorfach',ico:'🔗',ph:'z.B. FC 0.28mm'},
-  tt_gewichte:{label:'Gewichte',ico:'⚖️',ph:'z.B. Birnenblei 7g'},
   tt_haken:{label:'Haken',ico:'🪝',ph:'z.B. Offsethaken EWG #2'},
-  tt_wirbel:{label:'Wirbel & Snaps',ico:'🔄',ph:'z.B. Duolock Snap Gr. 1'},
-  tt_sonstiges:{label:'Sonstiges',ico:'🧰',ph:'z.B. Gummistopper M'},
-  tools:{label:'Tools',ico:'🔧',ph:'z.B. Kescher, Messer, Hakenschleifer'}
+  tt_sonstiges:{label:'Rigs',ico:'🪢',ph:'z.B. Carolina Rig komplett, 20g / FC 0.28'}
 };
 const EQ_MAIN=['ruten','rollen','schnur','vorfach'];
-const EQ_TERMINAL=['tt_gewichte','tt_haken','tt_wirbel','tt_sonstiges'];
+const EQ_TERMINAL=['tt_haken','tt_sonstiges'];
 function setTyp(g){return g.settyp||'Baitcaster'}
 function setCard(g){
   const parts=[['Rute','ruten',g.rutenId],['Rolle','rollen',g.rollenId],['Schnur','schnur',g.schnurId],['Vorfach','vorfach',g.vorfachId]]
@@ -1082,7 +1077,9 @@ function vEquipment(){
      <div><div class="name">${m.label}</div><div class="count">${DB[key].length} erfasst</div></div></div>`}).join('')}</div>`;
   const bc=DB.gearsets.filter(g=>setTyp(g)==='Baitcaster').length;
   const sp=DB.gearsets.filter(g=>setTyp(g)==='Spinning').length;
+  const ttCount=EQ_TERMINAL.reduce((s,k)=>s+DB[k].length,0);
   return header('Ausrüstung')+eq+
+    `<button class="btn ghost" data-go="terminal">🧰 Terminal Tackle (${ttCount} erfasst)</button>`+
     `<div class="section-title">Tacklesets</div>`+
     `<button class="btn" data-go="gearsetForm" style="margin:0 0 12px">＋ Tackleset</button>`+
     `<div class="eqgrid">
@@ -1433,66 +1430,12 @@ function topGearSektion(titel,eintraege,leer){
     :`<div class="empty">${leer}</div>`);
 }
 
-/* ================= Tipps & Tools ================= */
-function vTippsTools(){
-  return header('Tipps & Tools')+`
-  <div class="eqgrid">
-    <div class="tile" data-go="eqList" data-param="tools"><span class="ico">🔧</span>
-     <div><div class="name">Tools</div><div class="count">${DB.tools.length} erfasst</div></div></div>
-    <div class="tile" data-go="knoten"><span class="ico">🪢</span>
-     <div><div class="name">Knoten</div><div class="count">${DB.knoten.length} erfasst</div></div></div>
-  </div>`;
-}
-function vKnoten(){
-  const items=DB.knoten.map(k=>`<div class="card" data-go="knotenEdit" data-param="${k.id}">
-    <button class="del" data-del="knoten" data-id="${k.id}" aria-label="Löschen">✕</button>
-    <h3>${esc(k.name)}</h3>
-    ${k.verwendung?`<div class="meta">${esc(k.verwendung)}</div>`:''}
-    ${k.foto?`<img class="thumb" src="${k.foto}" alt="Knotenanleitung" data-foto="knoten:${k.id}">`:''}
-  </div>`).join('');
-  return header('Knoten')+
-    `<button class="btn" data-go="knotenForm" style="margin:0 0 16px">＋ Knoten</button>`+
-    (items?`<div class="list">${items}</div>`:`<div class="empty">Noch keine Knoten erfasst.<br>Zeit für den FG-Knoten? 🪢</div>`);
-}
-function vKnotenForm(editId){
-  const k=editId?DB.knoten.find(x=>x.id===editId):null;
-  fotoData=k?k.foto||null:null;
-  return header(k?'Knoten bearbeiten':'Neuer Knoten')+`
-  <form data-form="knoten" ${k?`data-edit="${k.id}"`:''}>
-    <div class="field"><label for="knname">Name</label>
-      <input type="text" id="knname" required placeholder="z.B. FG-Knoten" value="${k?esc(k.name):''}"></div>
-    <div class="field"><label for="knverw">Verwendung (optional)</label>
-      <input type="text" id="knverw" placeholder="z.B. Geflecht an Fluorocarbon-Vorfach" value="${k&&k.verwendung?esc(k.verwendung):''}"></div>
-    <div class="field"><label>Anleitung als Bild (optional)</label>
-      <label class="fotobtn">🖼 ${fotoData?'Anderes Bild wählen':'Anleitungsbild hochladen'}
-        <input type="file" id="ffoto" accept="image/*" data-max="1600" data-q="0.8" style="display:none">
-      </label>
-      <div id="fpreview">${fotoData?`<img src="${fotoData}" alt="Vorschau">`:''}</div>
-      <button type="button" class="btn ghost" data-act="fotoRemove" id="fremove" style="margin-top:10px;${fotoData?'':'display:none'}">Bild entfernen</button></div>
-    <button class="btn" type="submit">${k?'Änderungen speichern':'Knoten speichern'}</button>
-  </form>`;
-}
-function saveKnoten(editId){
-  const werte={
-    name:document.getElementById('knname').value.trim(),
-    verwendung:document.getElementById('knverw').value.trim(),
-    foto:fotoData
-  };
-  if(editId){
-    const k=DB.knoten.find(x=>x.id===editId);
-    if(k)Object.assign(k,werte);
-  }else{
-    DB.knoten.push(Object.assign({id:uid()},werte));
-  }
-  save();back();
-}
-
 /* ================= Löschen ================= */
 function delItem(coll,id){
   const names={plaetze:'diesen Platz',faenge:'diesen Fang',koeder:'diesen Köder',
     ruten:'diese Rute',rollen:'diese Rolle',schnur:'diese Schnur',vorfach:'dieses Vorfach',
-    tt_gewichte:'dieses Gewicht',tt_haken:'diesen Haken',tt_wirbel:'diesen Wirbel/Snap',tt_sonstiges:'diesen Eintrag',
-    gearsets:'dieses Tackleset',tools:'dieses Tool',knoten:'diesen Knoten'};
+    tt_haken:'diesen Haken',tt_sonstiges:'dieses Rig',
+    gearsets:'dieses Tackleset'};
   if(!confirm(`Willst du ${names[coll]} wirklich löschen?`))return;
   DB[coll]=DB[coll].filter(x=>x.id!==id);
   save();render();
