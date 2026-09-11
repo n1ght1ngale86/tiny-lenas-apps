@@ -219,7 +219,10 @@ function load(){
     d.ruten.forEach(r=>{if(!r.rutenart)r.rutenart='Baitcaster'});
     d.rollen.forEach(r=>{if(!r.typ)r.typ='Baitcastrolle'});
     d.koeder.forEach(k=>{if(!k.typ)k.typ='Softbait'});
-    d.tt_haken.forEach(h=>{if(!h.hakenart)h.hakenart='Haken'});
+    d.tt_haken.forEach(h=>{
+      if(!h.hakenart)h.hakenart='Haken';
+      if(h.hakenart==='Haken')h.hakenart=h.htyp==='Offset'?'Offsethaken':'Single-Haken';
+    });
     // Migration: Technik 'Jigkopf / Faulenzen' heisst jetzt schlicht 'Jigkopf'
     d.faenge.forEach(f=>{if(f.technik==='Jigkopf / Faulenzen')f.technik='Jigkopf'});
     // Migration: Jahreszeiten sind vom alten Wetter-Feld ins eigene Feld umgezogen
@@ -1067,14 +1070,14 @@ function setCard(g){
 const EQ_TYPEN={
   ruten:{feld:'rutenart',typen:[['Baitcaster','🎣'],['Spinning','🌀']]},
   rollen:{feld:'typ',typen:[['Baitcastrolle','⚙️'],['Stationärrolle','🌀']]},
-  tt_haken:{feld:'hakenart',typen:[['Haken','🪝'],['Jigkopf','⚫']]}
+  tt_haken:{feld:'hakenart',typen:[['Jigkopf','⚫','Jigköpfe'],['Offsethaken','🪝'],['Single-Haken','🎣']]}
 };
 function vEqTypHub(cat){
   const m=EQ_META[cat],t=EQ_TYPEN[cat];
-  const tiles=`<div class="eqgrid">${t.typen.map(([typ,ico])=>{
+  const tiles=`<div class="eqgrid">${t.typen.map(([typ,ico,label])=>{
     const n=DB[cat].filter(x=>x[t.feld]===typ).length;
     return `<div class="tile" data-go="eqList" data-param="${cat}|${typ}"><span class="ico">${ico}</span>
-     <div><div class="name">${typ}</div><div class="count">${n} erfasst</div></div></div>`}).join('')}</div>`;
+     <div><div class="name">${label||typ}</div><div class="count">${n} erfasst</div></div></div>`}).join('')}</div>`;
   return header(m.label)+tiles;
 }
 function vEquipment(){
@@ -1126,7 +1129,7 @@ function vEqList(cat,typ){
       <input type="file" id="jkbild" accept="image/*" style="display:none"></label>`):'';
   const items=liste.map(x=>`<div class="card" data-go="eqEdit" data-param="${cat}:${x.id}">
     <button class="del" data-del="${cat}" data-id="${x.id}" aria-label="Löschen">✕</button>
-    <h3>${esc(x.name)}</h3>${x.rutenart?`<div class="meta">${esc(x.rutenart)}${x.power?` · ${esc(x.power)}`:''}${x.aktion?` · ${esc(x.aktion)}`:''}${x.laenge!=null?` · ${x.laenge}m`:''}${x.wgMin!=null&&x.wgMax!=null?` · WG ${x.wgMin}–${x.wgMax}g`:''}</div>`:''}${x.typ?`<div class="meta">${esc(x.typ)}${x.uebersetzung?` · ${esc(x.uebersetzung)}`:''}${x.wurfgewicht?` · WG ${esc(x.wurfgewicht)}`:''}${x.bremskraft?` · Bremse ${esc(x.bremskraft)}`:''}</div>`:''}${x.schnurtyp?`<div class="meta">${esc(x.schnurtyp)}${x.pe?` · PE ${esc(x.pe)}`:''}${x.tragkraft?` · ${esc(x.tragkraft)}`:''}</div>`:''}${x.gewicht&&!x.hakenart&&!x.rigtyp?`<div class="meta">${esc(x.gewicht)}</div>`:''}${x.rigtyp?`<div class="meta">Zubehör: ${x.zubehoer&&x.zubehoer.length?x.zubehoer.map(esc).join(', '):'–'}</div>`:''}${x.hakenart==='Jigkopf'?`<div class="meta">Jigkopf${x.hgroesse?` · ${esc(x.hgroesse)}`:''}${x.gewicht?` · ${esc(x.gewicht)}`:''}</div>`:x.htyp?`<div class="meta">${esc(x.htyp)}${x.hgroesse?` · ${esc(x.hgroesse)}`:''}</div>`:''}${x.material?`<div class="meta">${esc(x.material)}${x.ausfuehrung?` · ${esc(x.ausfuehrung)}`:''}${x.details?` · ${esc(x.details)}`:''}</div>`:x.details?`<div class="meta">${esc(x.details)}</div>`:''}
+    <h3>${esc(x.name)}</h3>${x.rutenart?`<div class="meta">${esc(x.rutenart)}${x.power?` · ${esc(x.power)}`:''}${x.aktion?` · ${esc(x.aktion)}`:''}${x.laenge!=null?` · ${x.laenge}m`:''}${x.wgMin!=null&&x.wgMax!=null?` · WG ${x.wgMin}–${x.wgMax}g`:''}</div>`:''}${x.typ?`<div class="meta">${esc(x.typ)}${x.uebersetzung?` · ${esc(x.uebersetzung)}`:''}${x.wurfgewicht?` · WG ${esc(x.wurfgewicht)}`:''}${x.bremskraft?` · Bremse ${esc(x.bremskraft)}`:''}</div>`:''}${x.schnurtyp?`<div class="meta">${esc(x.schnurtyp)}${x.pe?` · PE ${esc(x.pe)}`:''}${x.tragkraft?` · ${esc(x.tragkraft)}`:''}</div>`:''}${x.gewicht&&!x.hakenart&&!x.rigtyp?`<div class="meta">${esc(x.gewicht)}</div>`:''}${x.rigtyp?`<div class="meta">Zubehör: ${x.zubehoer&&x.zubehoer.length?x.zubehoer.map(esc).join(', '):'–'}</div>`:''}${x.hakenart==='Jigkopf'?`<div class="meta">Jigkopf${x.hgroesse?` · ${esc(x.hgroesse)}`:''}${x.gewicht?` · ${esc(x.gewicht)}`:''}</div>`:x.hakenart?`<div class="meta">${esc(x.hakenart)}${x.hgroesse?` · ${esc(x.hgroesse)}`:''}</div>`:''}${x.material?`<div class="meta">${esc(x.material)}${x.ausfuehrung?` · ${esc(x.ausfuehrung)}`:''}${x.details?` · ${esc(x.details)}`:''}</div>`:x.details?`<div class="meta">${esc(x.details)}</div>`:''}
     ${x.rigs&&x.rigs.length?`<div class="tags">${x.rigs.map(r=>`<span class="tag">${esc(r)}</span>`).join('')}</div>`:''}
     ${x.zielfisch&&x.zielfisch.length?`<div class="tags">${x.zielfisch.map(fischTag).join('')}</div>`:''}
   </div>`).join('');
@@ -1191,7 +1194,7 @@ function vEqForm(cat,editId,preTyp){
         return `<label class="chk${on?' on':''}"><input type="checkbox" value="${r}" ${on?'checked':''}>${r}</label>`}).join('')}</div></div>`
     :cat==='tt_haken'
     ?(()=>{
-      const hart=x?(x.hakenart||'Haken'):(preTyp||'Haken');
+      const hart=x?(x.hakenart||'Single-Haken'):(preTyp||'Single-Haken');
       const groessen=hart==='Jigkopf'
         ?['#6','#5','#4','#3','#2','#1','1/0','2/0','3/0','4/0','5/0','6/0','7/0','8/0','9/0','10/0']
         :['#6','#5','#4','#3','#2','#1','1/0','2/0'];
@@ -1200,8 +1203,7 @@ function vEqForm(cat,editId,preTyp){
       return hart==='Jigkopf'
         ?groesseSel+`<div class="field"><label for="eqjgew">Gewicht</label>
           <input type="text" id="eqjgew" placeholder="z.B. 5g" value="${x&&x.gewicht?esc(x.gewicht):''}"></div>`
-        :groesseSel+`<div class="field"><label for="eqhtyp">Typ</label>
-          <select id="eqhtyp">${['Normal','Offset'].map(t=>`<option ${x&&x.htyp===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
+        :groesseSel;
     })()
     :cat==='tt_sonstiges'
     ?`<div class="field"><label for="eqrig">Rig</label>
@@ -1219,7 +1221,7 @@ function vEqForm(cat,editId,preTyp){
     :`<div class="field"><label for="eqd">Details (optional)</label>
       <input type="text" id="eqd" placeholder="z.B. Grösse, Tragkraft, Übersetzung …" value="${x?esc(x.details):''}"></div>`;
   return header(m.label,x?'Bearbeiten':'Neu erfassen')+`
-  <form data-form="eq" data-cat="${cat}" ${x?`data-edit="${x.id}"`:''} ${cat==='tt_haken'?`data-hakenart="${x?(x.hakenart||'Haken'):(preTyp||'Haken')}"`:''}>
+  <form data-form="eq" data-cat="${cat}" ${x?`data-edit="${x.id}"`:''} ${cat==='tt_haken'?`data-hakenart="${x?(x.hakenart||'Single-Haken'):(preTyp||'Single-Haken')}"`:''}>
     ${cat==='tt_sonstiges'?'':`<div class="field"><label for="eqn">Bezeichnung</label>
       <input type="text" id="eqn" required placeholder="${m.ph}" value="${x?esc(x.name):''}"></div>`}
     ${detailFeld}
@@ -1254,16 +1256,11 @@ function saveEq(cat,editId){
     werte.gewicht=document.getElementById('eqgew').value.trim();
     werte.rigs=[...document.querySelectorAll('.checks input:checked')].map(c=>c.value);
   }else if(cat==='tt_haken'){
-    const hart=document.querySelector('form[data-form="eq"]').dataset.hakenart||'Haken';
+    const hart=document.querySelector('form[data-form="eq"]').dataset.hakenart||'Single-Haken';
     werte.hakenart=hart;
     werte.hgroesse=document.getElementById('eqhgr').value;
-    if(hart==='Jigkopf'){
-      werte.gewicht=document.getElementById('eqjgew').value.trim();
-      werte.htyp='';
-    }else{
-      werte.htyp=document.getElementById('eqhtyp').value;
-      werte.gewicht='';
-    }
+    werte.gewicht=hart==='Jigkopf'?document.getElementById('eqjgew').value.trim():'';
+    werte.htyp='';
   }else if(cat==='tt_sonstiges'){
     werte.rigtyp=document.getElementById('eqrig').value;
     werte.gewicht=document.getElementById('eqriggew').value!==''?parseFloat(document.getElementById('eqriggew').value):null;
