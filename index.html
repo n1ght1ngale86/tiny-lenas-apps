@@ -463,6 +463,14 @@ document.addEventListener('submit',function(e){
 document.addEventListener('change',function(e){
   if(e.target.matches('.checks input')){
     e.target.parentNode.classList.toggle('on',e.target.checked);
+    const zub=e.target.closest('#eqrigzub');
+    if(zub&&e.target.checked){
+      zub.querySelectorAll('input').forEach(i=>{
+        if(i===e.target)return;
+        const wegen=e.target.value==='Kein'||i.value==='Kein';
+        if(wegen&&i.checked){i.checked=false;i.parentNode.classList.remove('on')}
+      });
+    }
     return;
   }
   if(e.target.id==='fktyp'){
@@ -1118,7 +1126,7 @@ function vEqList(cat,typ){
       <input type="file" id="jkbild" accept="image/*" style="display:none"></label>`):'';
   const items=liste.map(x=>`<div class="card" data-go="eqEdit" data-param="${cat}:${x.id}">
     <button class="del" data-del="${cat}" data-id="${x.id}" aria-label="Löschen">✕</button>
-    <h3>${esc(x.name)}</h3>${x.rutenart?`<div class="meta">${esc(x.rutenart)}${x.power?` · ${esc(x.power)}`:''}${x.aktion?` · ${esc(x.aktion)}`:''}${x.laenge!=null?` · ${x.laenge}m`:''}${x.wgMin!=null&&x.wgMax!=null?` · WG ${x.wgMin}–${x.wgMax}g`:''}</div>`:''}${x.typ?`<div class="meta">${esc(x.typ)}${x.uebersetzung?` · ${esc(x.uebersetzung)}`:''}${x.wurfgewicht?` · WG ${esc(x.wurfgewicht)}`:''}${x.bremskraft?` · Bremse ${esc(x.bremskraft)}`:''}</div>`:''}${x.schnurtyp?`<div class="meta">${esc(x.schnurtyp)}${x.pe?` · PE ${esc(x.pe)}`:''}${x.tragkraft?` · ${esc(x.tragkraft)}`:''}</div>`:''}${x.gewicht&&!x.hakenart?`<div class="meta">${esc(x.gewicht)}</div>`:''}${x.hakenart==='Jigkopf'?`<div class="meta">Jigkopf${x.hgroesse?` · ${esc(x.hgroesse)}`:''}${x.gewicht?` · ${esc(x.gewicht)}`:''}</div>`:x.htyp?`<div class="meta">${esc(x.htyp)}${x.hgroesse?` · ${esc(x.hgroesse)}`:''}</div>`:''}${x.material?`<div class="meta">${esc(x.material)}${x.ausfuehrung?` · ${esc(x.ausfuehrung)}`:''}${x.details?` · ${esc(x.details)}`:''}</div>`:x.details?`<div class="meta">${esc(x.details)}</div>`:''}
+    <h3>${esc(x.name)}</h3>${x.rutenart?`<div class="meta">${esc(x.rutenart)}${x.power?` · ${esc(x.power)}`:''}${x.aktion?` · ${esc(x.aktion)}`:''}${x.laenge!=null?` · ${x.laenge}m`:''}${x.wgMin!=null&&x.wgMax!=null?` · WG ${x.wgMin}–${x.wgMax}g`:''}</div>`:''}${x.typ?`<div class="meta">${esc(x.typ)}${x.uebersetzung?` · ${esc(x.uebersetzung)}`:''}${x.wurfgewicht?` · WG ${esc(x.wurfgewicht)}`:''}${x.bremskraft?` · Bremse ${esc(x.bremskraft)}`:''}</div>`:''}${x.schnurtyp?`<div class="meta">${esc(x.schnurtyp)}${x.pe?` · PE ${esc(x.pe)}`:''}${x.tragkraft?` · ${esc(x.tragkraft)}`:''}</div>`:''}${x.gewicht&&!x.hakenart&&!x.rigtyp?`<div class="meta">${esc(x.gewicht)}</div>`:''}${x.rigtyp?`<div class="meta">Zubehör: ${x.zubehoer&&x.zubehoer.length?x.zubehoer.map(esc).join(', '):'–'}</div>`:''}${x.hakenart==='Jigkopf'?`<div class="meta">Jigkopf${x.hgroesse?` · ${esc(x.hgroesse)}`:''}${x.gewicht?` · ${esc(x.gewicht)}`:''}</div>`:x.htyp?`<div class="meta">${esc(x.htyp)}${x.hgroesse?` · ${esc(x.hgroesse)}`:''}</div>`:''}${x.material?`<div class="meta">${esc(x.material)}${x.ausfuehrung?` · ${esc(x.ausfuehrung)}`:''}${x.details?` · ${esc(x.details)}`:''}</div>`:x.details?`<div class="meta">${esc(x.details)}</div>`:''}
     ${x.rigs&&x.rigs.length?`<div class="tags">${x.rigs.map(r=>`<span class="tag">${esc(r)}</span>`).join('')}</div>`:''}
     ${x.zielfisch&&x.zielfisch.length?`<div class="tags">${x.zielfisch.map(fischTag).join('')}</div>`:''}
   </div>`).join('');
@@ -1195,18 +1203,32 @@ function vEqForm(cat,editId,preTyp){
         :groesseSel+`<div class="field"><label for="eqhtyp">Typ</label>
           <select id="eqhtyp">${['Normal','Offset'].map(t=>`<option ${x&&x.htyp===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
     })()
+    :cat==='tt_sonstiges'
+    ?`<div class="field"><label for="eqrig">Rig</label>
+      <select id="eqrig">${['Free Rig','Texas Rig','Carolina Rig','Dropshot Rig','Cheburashka Rig'].map(r=>`<option ${x&&x.rigtyp===r?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="field"><label for="eqriggew">Gewicht (g, optional)</label>
+      <input type="number" id="eqriggew" min="0" step="0.1" inputmode="decimal" placeholder="z.B. 10" value="${x&&x.gewicht!=null&&x.gewicht!==''?x.gewicht:''}"></div>
+    <div class="field"><label>Zubehör</label>
+      <div class="checks" id="eqrigzub">${['Glasperle','Gummistopper','Wirbel','Kein'].map(z=>{
+        const on=x&&x.zubehoer&&x.zubehoer.includes(z);
+        return `<label class="chk${on?' on':''}"><input type="checkbox" value="${z}" ${on?'checked':''}>${z}</label>`}).join('')}</div></div>
+    <div class="field"><label>Fischart</label>
+      <div class="checks" id="eqrigfisch">${['Barsch','Zander','Salmoniden','Hecht'].map(f2=>{
+        const on=x&&x.zielfisch&&x.zielfisch.includes(f2);
+        return `<label class="chk${on?' on':''}" style="color:${statFischFarbe(f2)}"><input type="checkbox" value="${f2}" ${on?'checked':''}>${f2}</label>`}).join('')}</div></div>`
     :`<div class="field"><label for="eqd">Details (optional)</label>
       <input type="text" id="eqd" placeholder="z.B. Grösse, Tragkraft, Übersetzung …" value="${x?esc(x.details):''}"></div>`;
   return header(m.label,x?'Bearbeiten':'Neu erfassen')+`
   <form data-form="eq" data-cat="${cat}" ${x?`data-edit="${x.id}"`:''} ${cat==='tt_haken'?`data-hakenart="${x?(x.hakenart||'Haken'):(preTyp||'Haken')}"`:''}>
-    <div class="field"><label for="eqn">Bezeichnung</label>
-      <input type="text" id="eqn" required placeholder="${m.ph}" value="${x?esc(x.name):''}"></div>
+    ${cat==='tt_sonstiges'?'':`<div class="field"><label for="eqn">Bezeichnung</label>
+      <input type="text" id="eqn" required placeholder="${m.ph}" value="${x?esc(x.name):''}"></div>`}
     ${detailFeld}
     <button class="btn" type="submit">${x?'Änderungen speichern':'Speichern'}</button>
   </form>`;
 }
 function saveEq(cat,editId){
-  const werte={name:document.getElementById('eqn').value.trim()};
+  const nameEl=document.getElementById('eqn');
+  const werte={name:nameEl?nameEl.value.trim():''};
   if(cat==='ruten'){
     werte.rutenart=document.getElementById('eqart').value;
     werte.power=document.getElementById('eqpower').value;
@@ -1242,6 +1264,12 @@ function saveEq(cat,editId){
       werte.htyp=document.getElementById('eqhtyp').value;
       werte.gewicht='';
     }
+  }else if(cat==='tt_sonstiges'){
+    werte.rigtyp=document.getElementById('eqrig').value;
+    werte.gewicht=document.getElementById('eqriggew').value!==''?parseFloat(document.getElementById('eqriggew').value):null;
+    werte.zubehoer=[...document.querySelectorAll('#eqrigzub input:checked')].map(c=>c.value);
+    werte.zielfisch=[...document.querySelectorAll('#eqrigfisch input:checked')].map(c=>c.value);
+    werte.name=`${werte.rigtyp}${werte.gewicht!=null?` ${werte.gewicht}g`:''}`;
   }else{
     werte.details=document.getElementById('eqd').value.trim();
   }
